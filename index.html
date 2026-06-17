@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#06090c">
+<title>2FA</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306090c'/%3E%3Cpath d='M32 8 52 16v14c0 13-8.5 21-20 26-11.5-5-20-13-20-26V16z' fill='none' stroke='%2322d3ee' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M23 32l7 7 12-13' fill='none' stroke='%2322d3ee' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="manifest" href="./manifest.json">
+<script src="./vendor/qrcode.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* 本工具仅用到原 _ds/colors_and_type.css 里的这两个字体变量。
+       已移除 10MB 的 Alibaba PuHuiTi 网络字体，--font-sans 回退到系统中文字体。 */
+    :root{
+      --font-sans:'PingFang SC','Microsoft YaHei',system-ui,-apple-system,sans-serif;
+      --font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,'Liberation Mono',monospace;
+    }
+    *{box-sizing:border-box;}
+    html,body{background:#06090c;}
+    @keyframes gridPan{from{background-position:0 0,0 0;}to{background-position:64px 64px,64px 64px;}}
+    @keyframes auroraA{0%{transform:translate(-12%,-8%) scale(1);}50%{transform:translate(14%,12%) scale(1.3);}100%{transform:translate(-12%,-8%) scale(1);}}
+    @keyframes auroraB{0%{transform:translate(12%,14%) scale(1.15);}50%{transform:translate(-16%,-10%) scale(1);}100%{transform:translate(12%,14%) scale(1.15);}}
+    @keyframes scanMove{0%{transform:translateY(-10vh);opacity:0;}10%{opacity:.7;}90%{opacity:.7;}100%{transform:translateY(110vh);opacity:0;}}
+    @keyframes spinSlow{to{transform:rotate(360deg);}}
+    @keyframes spinRev{to{transform:rotate(-360deg);}}
+    @keyframes pulseDot{0%,100%{opacity:.4;transform:scale(.85);}50%{opacity:1;transform:scale(1.1);}}
+    @keyframes cardIn{from{transform:translateY(26px) scale(.965);}to{transform:none;}}
+    @keyframes borderGlow{0%,100%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent,#22d3ee) 22%,transparent),0 0 50px -14px color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);}50%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent,#22d3ee) 45%,transparent),0 0 80px -10px color-mix(in srgb,var(--accent,#22d3ee) 60%,transparent);}}
+    @keyframes codeGlow{0%,100%{text-shadow:0 0 14px color-mix(in srgb,var(--accent,#22d3ee) 45%,transparent);}50%{text-shadow:0 0 26px color-mix(in srgb,var(--accent,#22d3ee) 80%,transparent);}}
+    @keyframes flick{0%,100%{opacity:1;}50%{opacity:.82;}}
+    @keyframes sweepX{0%{transform:translateX(-130%);}100%{transform:translateX(130%);}}
+    textarea::placeholder,input::placeholder{color:rgba(255,255,255,.3);}
+    ::selection{background:color-mix(in srgb,var(--accent,#22d3ee) 40%,transparent);}
+  </style>
+</helmet>
+
+<div ref="{{ rootRef }}" style="position:relative;min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;background:radial-gradient(120% 120% at 50% 0%,#0c151b 0%,#070b0e 55%,#04060800 100%),#06090c;font-family:var(--font-sans);color:#eaf2f5;">
+
+  <!-- ===== animated background ===== -->
+  <div style="position:absolute;inset:-2px;pointer-events:none;background-image:linear-gradient(to right,color-mix(in srgb,var(--accent,#22d3ee) 11%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--accent,#22d3ee) 11%,transparent) 1px,transparent 1px);background-size:64px 64px;animation:gridPan 9s linear infinite;-webkit-mask-image:radial-gradient(110% 90% at 50% 45%,#000 25%,transparent 78%);mask-image:radial-gradient(110% 90% at 50% 45%,#000 25%,transparent 78%);opacity:.7;"></div>
+  <div style="position:absolute;top:-10%;left:-10%;width:55vmax;height:55vmax;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent,#22d3ee) 38%,transparent),transparent 68%);filter:blur(48px);opacity:.55;pointer-events:none;animation:auroraA 20s ease-in-out infinite;"></div>
+  <div style="position:absolute;bottom:-14%;right:-12%;width:50vmax;height:50vmax;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent,#22d3ee) 30%,transparent),transparent 70%);filter:blur(60px);opacity:.45;pointer-events:none;animation:auroraB 24s ease-in-out infinite;"></div>
+  <div style="position:absolute;left:0;right:0;height:18vh;pointer-events:none;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--accent,#22d3ee) 9%,transparent),transparent);animation:scanMove 7s linear infinite;"></div>
+  <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 110% at 50% 50%,transparent 55%,rgba(2,4,6,.85) 100%);"></div>
+
+  <!-- ============ VIEW MODE ============ -->
+  <sc-if value="{{ isView }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;z-index:1;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:24px;animation:cardIn .6s cubic-bezier(.2,.8,.2,1) both;">
+      <div style="position:relative;width:100%;border-radius:18px;padding:40px 34px 36px;background:linear-gradient(180deg,rgba(18,28,34,.66),rgba(8,13,17,.66));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);animation:borderGlow 4.5s ease-in-out infinite;display:flex;flex-direction:column;align-items:center;gap:26px;overflow:hidden;">
+
+        <div style="position:absolute;top:14px;left:14px;width:18px;height:18px;border-top:2px solid var(--accent,#22d3ee);border-left:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+        <div style="position:absolute;top:14px;right:14px;width:18px;height:18px;border-top:2px solid var(--accent,#22d3ee);border-right:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+        <div style="position:absolute;bottom:14px;left:14px;width:18px;height:18px;border-bottom:2px solid var(--accent,#22d3ee);border-left:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+        <div style="position:absolute;bottom:14px;right:14px;width:18px;height:18px;border-bottom:2px solid var(--accent,#22d3ee);border-right:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent,#22d3ee);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ labelName }}</div>
+          <div style="display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:rgba(234,242,245,.55);">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--accent,#22d3ee);box-shadow:0 0 10px var(--accent,#22d3ee);animation:pulseDot 1.6s ease-in-out infinite;"></span>LIVE
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="display:flex;gap:8px;">
+            <sc-for list="{{ leftDigits }}" as="d" hint-placeholder-count="3">
+              <div style="width:46px;height:66px;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,rgba(255,255,255,.015));font-family:var(--font-mono);font-size:40px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
+            </sc-for>
+          </div>
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--accent,#22d3ee);box-shadow:0 0 12px var(--accent,#22d3ee);"></div>
+          <div style="display:flex;gap:8px;">
+            <sc-for list="{{ rightDigits }}" as="d" hint-placeholder-count="3">
+              <div style="width:46px;height:66px;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,rgba(255,255,255,.015));font-family:var(--font-mono);font-size:40px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ useRing }}" hint-placeholder-val="{{ true }}">
+          <div style="position:relative;width:64px;height:64px;">
+            <div style="position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0%,var(--accent,#22d3ee) 70%,transparent 100%);-webkit-mask:radial-gradient(circle,transparent 24px,#000 25px);mask:radial-gradient(circle,transparent 24px,#000 25px);opacity:.5;animation:spinSlow 3.5s linear infinite;"></div>
+            <svg width="64" height="64" viewBox="0 0 64 64" style="transform:rotate(-90deg);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--accent,#22d3ee) 70%,transparent));">
+              <circle cx="32" cy="32" r="{{ ringR }}" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="3"></circle>
+              <circle cx="32" cy="32" r="{{ ringR }}" fill="none" stroke="var(--accent,#22d3ee)" stroke-width="3" stroke-linecap="round" stroke-dasharray="{{ ringC }}" stroke-dashoffset="{{ ringOffset }}"></circle>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:16px;color:var(--accent,#22d3ee);">{{ secondsLeft }}</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ useBar }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%;display:flex;flex-direction:column;gap:9px;align-items:center;">
+            <div style="width:100%;height:5px;border-radius:9999px;background:rgba(255,255,255,.08);overflow:hidden;">
+              <div style="height:100%;border-radius:9999px;background:var(--accent,#22d3ee);box-shadow:0 0 12px var(--accent,#22d3ee);width:{{ barWidth }};"></div>
+            </div>
+            <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;color:rgba(234,242,245,.5);">{{ secondsLeft }}S</div>
+          </div>
+        </sc-if>
+
+        <button onClick="{{ onCopyCode }}" style="position:relative;width:100%;height:48px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;overflow:hidden;box-shadow:0 0 24px -10px var(--accent,#22d3ee);" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);box-shadow:0 0 34px -8px var(--accent,#22d3ee);">{{ copyLabel }}</button>
+
+        <button onClick="{{ onToggleQr }}" style="width:100%;height:40px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ qrLabel }}</button>
+        <sc-if value="{{ showQr }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;border-radius:12px;background:#fff;">
+            <img src="{{ qrDataUrl }}" alt="otpauth QR" style="width:180px;height:180px;image-rendering:pixelated;display:block;">
+          </div>
+        </sc-if>
+      </div>
+
+      <button onClick="{{ onAddAnother }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">+ 新建验证码</button>
+    </div>
+  </sc-if>
+
+  <!-- ============ SETUP MODE ============ -->
+  <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative;z-index:1;width:100%;max-width:480px;animation:cardIn .6s cubic-bezier(.2,.8,.2,1) both;">
+      <div style="position:relative;border-radius:18px;padding:30px;background:linear-gradient(180deg,rgba(18,28,34,.66),rgba(8,13,17,.66));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);animation:borderGlow 4.5s ease-in-out infinite;display:flex;flex-direction:column;gap:20px;overflow:hidden;">
+
+        <div style="position:absolute;top:14px;left:14px;width:16px;height:16px;border-top:2px solid var(--accent,#22d3ee);border-left:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+        <div style="position:absolute;top:14px;right:14px;width:16px;height:16px;border-top:2px solid var(--accent,#22d3ee);border-right:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+        <div style="position:absolute;bottom:14px;left:14px;width:16px;height:16px;border-bottom:2px solid var(--accent,#22d3ee);border-left:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+        <div style="position:absolute;bottom:14px;right:14px;width:16px;height:16px;border-bottom:2px solid var(--accent,#22d3ee);border-right:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+
+        <label style="display:flex;flex-direction:column;gap:9px;">
+          <span style="display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">
+            <span>密钥 / SECRET</span>
+            <button onClick="{{ onScanImport }}" style="border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;padding:4px 12px;cursor:pointer;text-transform:uppercase;" style-hover="background:rgba(255,255,255,.1);">⃞ 扫码导入</button>
+          </span>
+          <textarea onChange="{{ onInput }}" value="{{ inputValue }}" rows="2" placeholder="粘贴 2FA 密钥，或 otpauth:// 链接" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:14px;line-height:1.6;resize:none;padding:13px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
+        </label>
+
+        <sc-if value="{{ error }}" hint-placeholder-val="">
+          <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:#f0a;margin-top:-8px;opacity:.85;">⚠ {{ error }}</div>
+        </sc-if>
+        <sc-if value="{{ importMsg }}" hint-placeholder-val="">
+          <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:rgba(234,242,245,.6);margin-top:-8px;">{{ importMsg }}</div>
+        </sc-if>
+
+        <label style="display:flex;flex-direction:column;gap:9px;">
+          <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">账号名称 / LABEL</span>
+          <input onChange="{{ onLabel }}" value="{{ inputLabel }}" placeholder="例如 GitHub" spellcheck="false" style="width:100%;font-family:var(--font-sans);font-size:14px;padding:12px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);">
+        </label>
+
+        <sc-if value="{{ hasParsed }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:18px;border-top:1px solid rgba(255,255,255,.1);padding-top:22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+              <div onClick="{{ onCopyCode }}" title="点击复制" style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;">
+                <sc-for list="{{ leftDigits }}" as="d" hint-placeholder-count="3">
+                  <div style="width:38px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,transparent);font-family:var(--font-mono);font-size:30px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
+                </sc-for>
+                <div style="width:5px;height:5px;border-radius:50%;background:var(--accent,#22d3ee);box-shadow:0 0 8px var(--accent,#22d3ee);margin:0 1px;"></div>
+                <sc-for list="{{ rightDigits }}" as="d" hint-placeholder-count="3">
+                  <div style="width:38px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,transparent);font-family:var(--font-mono);font-size:30px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
+                </sc-for>
+              </div>
+              <div style="position:relative;width:50px;height:50px;flex:none;">
+                <svg width="50" height="50" viewBox="0 0 50 50" style="transform:rotate(-90deg);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--accent,#22d3ee) 70%,transparent));">
+                  <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="3"></circle>
+                  <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent,#22d3ee)" stroke-width="3" stroke-linecap="round" stroke-dasharray="{{ ringCsm }}" stroke-dashoffset="{{ ringOffsetSm }}"></circle>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:14px;color:var(--accent,#22d3ee);">{{ secondsLeft }}</div>
+              </div>
+            </div>
+
+            <button onClick="{{ onCopyCode }}" style="width:100%;height:46px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 22px -10px var(--accent,#22d3ee);" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);box-shadow:0 0 30px -8px var(--accent,#22d3ee);">{{ copyLabel }}</button>
+
+            <button onClick="{{ onToggleQr }}" style="width:100%;height:42px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ qrLabel }}</button>
+            <sc-if value="{{ showQr }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:center;padding:14px;border-radius:12px;background:#fff;">
+                <img src="{{ qrDataUrl }}" alt="otpauth QR" style="width:180px;height:180px;image-rendering:pixelated;display:block;">
+              </div>
+            </sc-if>
+
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">专属链接 / BOOKMARK</span>
+              <div style="font-family:var(--font-mono);font-size:12px;line-height:1.7;color:rgba(234,242,245,.7);word-break:break-all;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:13px 15px;border-radius:10px;">{{ url }}</div>
+              <div style="display:flex;gap:10px;">
+                <button onClick="{{ onCopyUrl }}" style="flex:1;height:46px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 22px -10px var(--accent,#22d3ee);" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ urlCopyLabel }}</button>
+                <button onClick="{{ onOpenUrl }}" style="height:46px;padding:0 22px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">打开</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:600,&quot;height&quot;:760},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#22d3ee&quot;,&quot;#34d399&quot;,&quot;#a78bfa&quot;,&quot;#8fb0c4&quot;,&quot;#fb7185&quot;],&quot;default&quot;:&quot;#22d3ee&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;progressStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ring&quot;,&quot;bar&quot;],&quot;default&quot;:&quot;ring&quot;,&quot;tsType&quot;:&quot;'ring'|'bar'&quot;}}">
+class Component extends DCLogic {
+  rootRef = React.createRef();
+  state = {
+    mode: 'setup',
+    secret: '', label: '', issuer: '', digits: 6, period: 30, algorithm: 'SHA-1',
+    code: '', secondsLeft: 30, copied: false,
+    inputValue: '', inputLabel: '', parsed: null, previewCode: '', error: '', urlCopied: false,
+    shownDigits: null, animating: false,
+    showQr: false, qrDataUrl: '', importMsg: '',
+  };
+
+  componentDidMount() {
+    this.applyAccent();
+    this._tick = setInterval(() => this.tick(), 250);
+    this._onHash = () => this.loadFromHash();
+    window.addEventListener('hashchange', this._onHash);
+    this.loadFromHash();
+    this.registerSW();
+  }
+  componentDidUpdate() { this.applyAccent(); }
+  componentWillUnmount() {
+    clearInterval(this._tick);
+    clearInterval(this._anim);
+    clearTimeout(this._parseT);
+    window.removeEventListener('hashchange', this._onHash);
+  }
+
+  registerSW() {
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  }
+
+  applyAccent() {
+    const a = this.props.accentColor ?? '#22d3ee';
+    if (this.rootRef.current) this.rootRef.current.style.setProperty('--accent', a);
+  }
+
+  loadFromHash() {
+    const raw = (location.hash || '').replace(/^#/, '');
+    const params = new URLSearchParams(raw);
+    const secret = (params.get('secret') || '').trim();
+    this._animCode = null;
+    if (secret && this.base32Decode(secret)) {
+      const label = params.get('label') || '';
+      const issuer = params.get('issuer') || '';
+      const digits = this.clampDigits(params.get('digits'));
+      const period = this.clampPeriod(params.get('period'));
+      const algorithm = this.normAlgo(params.get('algorithm'));
+      this._lastCounter = null;
+      this.setState({ mode: 'view', secret, label, issuer, digits, period, algorithm, code: '', copied: false, shownDigits: null, animating: false, showQr: false }, () => this.refresh());
+      document.title = (label || issuer || '验证码') + ' · 2FA';
+    } else {
+      this.setState({ mode: 'setup' });
+      document.title = '2FA';
+    }
+  }
+
+  clampDigits(d) { d = parseInt(d); return (Number.isFinite(d) && d >= 6 && d <= 8) ? d : 6; }
+  clampPeriod(p) { p = parseInt(p); return (Number.isFinite(p) && p >= 10 && p <= 300) ? p : 30; }
+
+  normAlgo(a) {
+    if (!a) return 'SHA-1';
+    const n = String(a).toUpperCase().replace(/[^0-9]/g, '');
+    return n === '256' ? 'SHA-256' : n === '512' ? 'SHA-512' : 'SHA-1';
+  }
+
+  base32Decode(b32) {
+    const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    b32 = (b32 || '').replace(/=+$/, '').replace(/\s/g, '').toUpperCase();
+    if (!b32) return null;
+    let bits = 0, value = 0; const out = [];
+    for (const ch of b32) {
+      const i = A.indexOf(ch);
+      if (i < 0) return null;
+      value = (value << 5) | i; bits += 5;
+      if (bits >= 8) { out.push((value >>> (bits - 8)) & 0xff); bits -= 8; }
+    }
+    return out.length ? new Uint8Array(out) : null;
+  }
+
+  async totp(secret, time, digits, period, algorithm) {
+    const key = this.base32Decode(secret);
+    if (!key) throw new Error('invalid');
+    const counter = Math.floor(time / period);
+    const buf = new ArrayBuffer(8); const dv = new DataView(buf);
+    dv.setUint32(0, Math.floor(counter / 0x100000000));
+    dv.setUint32(4, counter >>> 0);
+    const ck = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: algorithm }, false, ['sign']);
+    const sig = new Uint8Array(await crypto.subtle.sign('HMAC', ck, buf));
+    const off = sig[sig.length - 1] & 0x0f;
+    const bin = ((sig[off] & 0x7f) << 24) | ((sig[off + 1] & 0xff) << 16) | ((sig[off + 2] & 0xff) << 8) | (sig[off + 3] & 0xff);
+    return String(bin % Math.pow(10, digits)).padStart(digits, '0');
+  }
+
+  animateTo(code) {
+    if (!code) return;
+    clearInterval(this._anim);
+    const n = code.length;
+    const lockAt = []; for (let i = 0; i < n; i++) lockAt[i] = 140 + i * 90;
+    const start = performance.now();
+    const rand = () => String(Math.floor(Math.random() * 10));
+    this.setState({ animating: true, shownDigits: code.split('').map(rand) });
+    this._anim = setInterval(() => {
+      const el = performance.now() - start;
+      const shown = []; let done = true;
+      for (let i = 0; i < n; i++) {
+        if (el >= lockAt[i]) shown.push(code[i]);
+        else { shown.push(rand()); done = false; }
+      }
+      if (done) { clearInterval(this._anim); this.setState({ shownDigits: code.split(''), animating: false }); }
+      else this.setState({ shownDigits: shown });
+    }, 45);
+  }
+
+  async refresh() {
+    if (this.state.mode !== 'view' || !this.state.secret) return;
+    try {
+      const code = await this.totp(this.state.secret, Date.now() / 1000, this.state.digits, this.state.period, this.state.algorithm);
+      if (code !== this._animCode) { this._animCode = code; this.animateTo(code); }
+      this.setState({ code });
+    } catch (e) { this.setState({ code: '' }); }
+  }
+
+  async refreshPreview() {
+    const p = this.state.parsed;
+    if (!p || !p.secret) { this.setState({ previewCode: '', shownDigits: null }); return; }
+    try {
+      const code = await this.totp(p.secret, Date.now() / 1000, p.digits, p.period, p.algorithm);
+      if (code !== this._animCode) { this._animCode = code; this.animateTo(code); }
+      this.setState({ previewCode: code });
+    } catch (e) { this.setState({ previewCode: '' }); }
+  }
+
+  tick() {
+    const now = Date.now() / 1000;
+    if (this.state.mode === 'view' && this.state.secret) {
+      const p = this.state.period;
+      const counter = Math.floor(now / p);
+      if (counter !== this._lastCounter) { this._lastCounter = counter; this.refresh(); }
+      const sl = Math.max(1, Math.ceil(p - (now % p)));
+      if (sl !== this.state.secondsLeft) this.setState({ secondsLeft: sl });
+    } else if (this.state.mode === 'setup' && this.state.parsed) {
+      const p = this.state.parsed.period;
+      const counter = Math.floor(now / p);
+      if (counter !== this._lastPrevCounter) { this._lastPrevCounter = counter; this.refreshPreview(); }
+      const sl = Math.max(1, Math.ceil(p - (now % p)));
+      if (sl !== this.state.secondsLeft) this.setState({ secondsLeft: sl });
+    }
+  }
+
+  parseInput(raw) {
+    raw = (raw || '').trim();
+    if (!raw) return null;
+    let secret = '', label = '', issuer = '', digits = 6, period = 30, algorithm = 'SHA-1';
+    if (/^otpauth:\/\//i.test(raw)) {
+      try {
+        const u = new URL(raw);
+        const sp = u.searchParams;
+        secret = (sp.get('secret') || '').trim();
+        issuer = sp.get('issuer') || '';
+        let path = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
+        if (path.includes(':')) {
+          if (!issuer) issuer = path.split(':')[0].trim();
+          label = path.split(':').slice(1).join(':').trim();
+        } else { label = path; }
+        digits = this.clampDigits(sp.get('digits'));
+        period = this.clampPeriod(sp.get('period'));
+        algorithm = this.normAlgo(sp.get('algorithm'));
+      } catch (e) { return { secret: '', valid: false }; }
+    } else {
+      secret = raw.replace(/\s/g, '');
+    }
+    const valid = !!this.base32Decode(secret);
+    return { secret, label, issuer, digits, period, algorithm, valid };
+  }
+
+  onInput(v) {
+    // 每次按键只轻量更新输入框内容，保证打字跟手；
+    // 解析 + 预览 + 滚动动画防抖到停手后再做一次，避免逐字符的重渲染风暴导致掉字符/误报无效。
+    this.setState({ inputValue: v, importMsg: '' });
+    clearTimeout(this._parseT);
+    this._parseT = setTimeout(() => this.commitParse(v), 280);
+  }
+
+  commitParse(v) {
+    const parsed = this.parseInput(v);
+    const ok = parsed && parsed.valid;
+    this._lastPrevCounter = null;
+    this._animCode = null;
+    this.setState({
+      parsed: ok ? parsed : null,
+      previewCode: ok ? this.state.previewCode : '',
+      shownDigits: ok ? this.state.shownDigits : null,
+      error: (v.trim() && !ok) ? '密钥无效，请检查后重试' : '',
+      inputLabel: (ok && parsed.label && !this.state.inputLabel) ? parsed.label : this.state.inputLabel,
+    }, () => this.refreshPreview());
+  }
+
+  onLabel(v) { this.setState({ inputLabel: v }); }
+
+  // ---------- QR 扫码导入 ----------
+  async scanImport() {
+    if (!('BarcodeDetector' in window)) {
+      this.setState({ importMsg: '此浏览器不支持扫码，请直接粘贴 otpauth:// 链接' });
+      return;
+    }
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async () => {
+      const file = inp.files && inp.files[0];
+      if (!file) return;
+      try {
+        const bitmap = await createImageBitmap(file);
+        const det = new BarcodeDetector({ formats: ['qr_code'] });
+        const codes = await det.detect(bitmap);
+        const val = codes && codes[0] && codes[0].rawValue;
+        if (val && /^otpauth:\/\//i.test(val)) { this.onInput(val); this.setState({ importMsg: '已从二维码导入 ✓' }); }
+        else if (val) { this.onInput(val); }
+        else this.setState({ importMsg: '未识别到二维码' });
+      } catch (e) { this.setState({ importMsg: '二维码解析失败' }); }
+    };
+    inp.click();
+  }
+
+  // ---------- QR 生成导出 ----------
+  buildOtpauthUrl(a) {
+    if (!a || !a.secret) return '';
+    const labelPart = encodeURIComponent((a.issuer ? a.issuer + ':' : '') + (a.label || 'account'));
+    const sp = new URLSearchParams();
+    sp.set('secret', a.secret);
+    if (a.issuer) sp.set('issuer', a.issuer);
+    sp.set('algorithm', (a.algorithm || 'SHA-1').replace('-', ''));
+    sp.set('digits', String(a.digits || 6));
+    sp.set('period', String(a.period || 30));
+    return 'otpauth://totp/' + labelPart + '?' + sp.toString();
+  }
+  toggleQr() {
+    if (this.state.showQr) { this.setState({ showQr: false }); return; }
+    const s = this.state;
+    const a = s.mode === 'view'
+      ? { secret: s.secret, label: s.label, issuer: s.issuer, digits: s.digits, period: s.period, algorithm: s.algorithm }
+      : s.parsed;
+    const url = this.buildOtpauthUrl(a);
+    if (!url || typeof qrcode === 'undefined') { this.setState({ importMsg: '二维码不可用' }); return; }
+    try {
+      const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+      this.setState({ showQr: true, qrDataUrl: qr.createDataURL(5, 2) });
+    } catch (e) { this.setState({ importMsg: '二维码生成失败' }); }
+  }
+
+  buildUrl() {
+    const p = this.state.parsed; if (!p) return '';
+    const sp = new URLSearchParams();
+    sp.set('secret', p.secret);
+    const label = (this.state.inputLabel || p.label || '').trim();
+    if (label) sp.set('label', label);
+    if (p.issuer) sp.set('issuer', p.issuer);
+    if (p.digits !== 6) sp.set('digits', String(p.digits));
+    if (p.period !== 30) sp.set('period', String(p.period));
+    if (p.algorithm !== 'SHA-1') sp.set('algorithm', p.algorithm.replace('SHA-', ''));
+    return location.origin + location.pathname + '#' + sp.toString();
+  }
+
+  copyText(text, key) {
+    const done = () => {
+      this.setState({ [key]: true });
+      clearTimeout(this['_t_' + key]);
+      this['_t_' + key] = setTimeout(() => this.setState({ [key]: false }), 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => this.fallbackCopy(text, done));
+    } else { this.fallbackCopy(text, done); }
+  }
+  fallbackCopy(text, done) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta); done();
+    } catch (e) {}
+  }
+
+  addAnother() {
+    this._animCode = null;
+    if (location.hash) location.hash = '';
+    this.setState({ mode: 'setup', secret: '', inputValue: '', inputLabel: '', parsed: null, previewCode: '', error: '', shownDigits: null, animating: false, showQr: false, importMsg: '' });
+    document.title = '2FA';
+  }
+
+  renderVals() {
+    const s = this.state;
+    const progressStyle = this.props.progressStyle ?? 'ring';
+    const isView = s.mode === 'view';
+    const period = isView ? s.period : (s.parsed ? s.parsed.period : 30);
+    const frac = Math.min(1, Math.max(0, s.secondsLeft / period));
+    const R = 26, C = 2 * Math.PI * R;
+    const Rsm = 20, Csm = 2 * Math.PI * Rsm;
+    const realCode = isView ? s.code : s.previewCode;
+    const digits = isView ? s.digits : (s.parsed ? s.parsed.digits : 6);
+    let chars;
+    if (s.shownDigits && s.shownDigits.length) chars = s.shownDigits;
+    else if (realCode && realCode.length) chars = realCode.split('');
+    else chars = Array(digits).fill('•');
+    const mid = Math.ceil(chars.length / 2);
+    const code = realCode;
+
+    return {
+      rootRef: this.rootRef,
+      isView, isSetup: s.mode === 'setup',
+      useRing: progressStyle === 'ring',
+      useBar: progressStyle === 'bar',
+      leftDigits: chars.slice(0, mid),
+      rightDigits: chars.slice(mid),
+      labelName: s.label || s.issuer || '验证码',
+      secondsLeft: s.secondsLeft,
+      ringR: R, ringC: C, ringOffset: C * (1 - frac),
+      ringCsm: Csm, ringOffsetSm: Csm * (1 - frac),
+      barWidth: (frac * 100).toFixed(2) + '%',
+      copyLabel: s.copied ? '已复制 ✓' : '复制验证码',
+      onCopyCode: () => { if (code && code.length) this.copyText(code, 'copied'); },
+      onAddAnother: () => this.addAnother(),
+      inputValue: s.inputValue,
+      inputLabel: s.inputLabel,
+      onInput: (e) => this.onInput(e.target.value),
+      onLabel: (e) => this.onLabel(e.target.value),
+      hasParsed: !!s.parsed,
+      error: s.error,
+      importMsg: s.importMsg,
+      url: this.buildUrl(),
+      urlCopyLabel: s.urlCopied ? '已复制 ✓' : '复制链接',
+      onCopyUrl: () => { const u = this.buildUrl(); if (u) this.copyText(u, 'urlCopied'); },
+      onOpenUrl: () => { const u = this.buildUrl(); if (u) location.href = u; },
+      onScanImport: () => this.scanImport(),
+      onToggleQr: () => this.toggleQr(),
+      qrLabel: s.showQr ? '隐藏二维码' : '显示二维码 ⃞',
+      showQr: s.showQr,
+      qrDataUrl: s.qrDataUrl,
+    };
+  }
+}
+</script>
+</body>
+</html>
