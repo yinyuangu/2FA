@@ -57,7 +57,7 @@
 
   <!-- ============ VIEW MODE ============ -->
   <sc-if value="{{ isView }}" hint-placeholder-val="{{ false }}">
-    <div style="position:relative;z-index:1;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:24px;animation:cardIn .6s cubic-bezier(.2,.8,.2,1) both;">
+    <div style="position:relative;z-index:1;width:100%;max-width:{{ viewMaxW }};display:flex;flex-direction:column;align-items:center;gap:24px;animation:cardIn .6s cubic-bezier(.2,.8,.2,1) both;">
       <div style="position:relative;width:100%;border-radius:18px;padding:40px 34px 36px;background:linear-gradient(180deg,rgba(18,28,34,.66),rgba(8,13,17,.66));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);animation:borderGlow 4.5s ease-in-out infinite;display:flex;flex-direction:column;align-items:center;gap:26px;overflow:hidden;">
 
         <div style="position:absolute;top:14px;left:14px;width:18px;height:18px;border-top:2px solid var(--accent,#22d3ee);border-left:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
@@ -75,13 +75,13 @@
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="display:flex;gap:8px;">
             <sc-for list="{{ leftDigits }}" as="d" hint-placeholder-count="3">
-              <div style="width:46px;height:66px;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,rgba(255,255,255,.015));font-family:var(--font-mono);font-size:40px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
+              <div style="width:{{ digitW }};height:{{ digitH }};display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,rgba(255,255,255,.015));font-family:var(--font-mono);font-size:{{ digitF }};font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
             </sc-for>
           </div>
           <div style="width:7px;height:7px;border-radius:50%;background:var(--accent,#22d3ee);box-shadow:0 0 12px var(--accent,#22d3ee);"></div>
           <div style="display:flex;gap:8px;">
             <sc-for list="{{ rightDigits }}" as="d" hint-placeholder-count="3">
-              <div style="width:46px;height:66px;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,rgba(255,255,255,.015));font-family:var(--font-mono);font-size:40px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
+              <div style="width:{{ digitW }};height:{{ digitH }};display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,rgba(255,255,255,.015));font-family:var(--font-mono);font-size:{{ digitF }};font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
             </sc-for>
           </div>
         </div>
@@ -105,21 +105,30 @@
           </div>
         </sc-if>
 
-        <button onClick="{{ onCopyCode }}" style="position:relative;width:100%;height:48px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;overflow:hidden;box-shadow:0 0 24px -10px var(--accent,#22d3ee);" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);box-shadow:0 0 34px -8px var(--accent,#22d3ee);">{{ copyLabel }}</button>
+        <sc-if value="{{ showViewChrome }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ onCopyCode }}" style="position:relative;width:100%;height:48px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;overflow:hidden;box-shadow:0 0 24px -10px var(--accent,#22d3ee);" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);box-shadow:0 0 34px -8px var(--accent,#22d3ee);">{{ copyLabel }}</button>
 
-        <button onClick="{{ onToggleQr }}" style="width:100%;height:40px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ qrLabel }}</button>
-        <sc-if value="{{ showQr }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;border-radius:12px;background:#fff;">
-            <img src="{{ qrDataUrl }}" alt="otpauth QR" style="width:180px;height:180px;image-rendering:pixelated;display:block;">
-          </div>
+          <button onClick="{{ onToggleQr }}" style="width:100%;height:40px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ qrLabel }}</button>
+          <sc-if value="{{ showQr }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;border-radius:12px;background:#fff;">
+              <img src="{{ qrDataUrl }}" alt="otpauth QR" style="width:180px;height:180px;image-rendering:pixelated;display:block;">
+            </div>
+          </sc-if>
         </sc-if>
       </div>
 
-      <div style="display:flex;align-items:center;gap:6px;">
-        <button onClick="{{ onAddAnother }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">+ 新建验证码</button>
-        <span style="color:rgba(234,242,245,.2);font-size:11px;">·</span>
-        <button onClick="{{ onAddToBoard }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">加入看板</button>
-      </div>
+      <sc-if value="{{ showViewChrome }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;">
+          <button onClick="{{ onAddAnother }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">+ 新建验证码</button>
+          <span style="color:rgba(234,242,245,.2);font-size:11px;">·</span>
+          <button onClick="{{ onAddToBoard }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">加入看板</button>
+          <span style="color:rgba(234,242,245,.2);font-size:11px;">·</span>
+          <button onClick="{{ onEnterPresent }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">🖥 演示模式</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isPresent }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ onExitPresent }}" style="background:none;border:none;color:rgba(234,242,245,.35);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">✕ 退出演示</button>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -195,6 +204,24 @@
                 <button onClick="{{ onCopyUrl }}" style="flex:1;height:46px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 22px -10px var(--accent,#22d3ee);" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ urlCopyLabel }}</button>
                 <button onClick="{{ onOpenUrl }}" style="height:46px;padding:0 22px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">打开</button>
               </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px;">
+              <button onClick="{{ onTogglePresent }}" style="align-self:flex-start;height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);color:var(--accent,#22d3ee);">{{ presentToggleLabel }}</button>
+              <sc-if value="{{ presentPanel }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:11px;">
+                  <div style="font-family:var(--font-sans);font-size:12px;line-height:1.7;color:rgba(234,242,245,.68);">打开后只显示放大的验证码、隐藏二维码——适合投屏 / 录屏 / 当面给人读，避免把密钥二维码暴露在屏幕上。</div>
+                  <div style="display:flex;align-items:flex-start;gap:8px;font-family:var(--font-sans);font-size:12px;line-height:1.6;color:#fbbf24;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:11px 13px;">
+                    <span style="flex:none;">⚠️</span><span>它只防<b>你这边屏幕</b>暴露。链接本身仍含密钥，发给别人 = 对方拿到密钥——请走可信渠道，用后及时轮换。</span>
+                  </div>
+                  <button onClick="{{ onToggleNolabel }}" style="align-self:flex-start;background:none;border:none;color:rgba(234,242,245,.6);font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;padding:2px 0;" style-hover="color:var(--accent,#22d3ee);">{{ nolabelLabel }}</button>
+                  <div style="font-family:var(--font-mono);font-size:12px;line-height:1.7;color:rgba(234,242,245,.7);word-break:break-all;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:13px 15px;border-radius:10px;">{{ presentUrl }}</div>
+                  <div style="display:flex;gap:10px;">
+                    <button onClick="{{ onCopyPresentUrl }}" style="flex:1;height:46px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ presentCopyLabel }}</button>
+                    <button onClick="{{ onOpenPresentUrl }}" style="height:46px;padding:0 22px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">打开</button>
+                  </div>
+                </div>
+              </sc-if>
             </div>
           </div>
         </sc-if>
@@ -302,6 +329,9 @@ class Component extends DCLogic {
     accounts: [], boardLive: [], copiedIdx: null,
     importOpen: false, exportOpen: false, boardMsg: '', dragging: false,
     pasteValue: '', linksCopied: false, boardUrlCopied: false,
+    // —— 演示模式 ——
+    present: false, nolabel: false,
+    presentPanel: false, presentNolabel: false, presentUrlCopied: false,
   };
 
   componentDidMount() {
@@ -353,9 +383,11 @@ class Component extends DCLogic {
       const digits = this.clampDigits(params.get('digits'));
       const period = this.clampPeriod(params.get('period'));
       const algorithm = this.normAlgo(params.get('algorithm'));
+      const present = params.get('present') === '1' || params.get('view') === 'code';
+      const nolabel = params.get('nolabel') === '1';
       this._lastCounter = null;
-      this.setState({ mode: 'view', secret, label, issuer, digits, period, algorithm, code: '', copied: false, shownDigits: null, animating: false, showQr: false }, () => this.refresh());
-      document.title = (label || issuer || '验证码') + ' · 2FA';
+      this.setState({ mode: 'view', secret, label, issuer, digits, period, algorithm, present, nolabel, code: '', copied: false, shownDigits: null, animating: false, showQr: false }, () => this.refresh());
+      document.title = ((nolabel ? '' : (label || issuer)) || '验证码') + ' · 2FA';
     } else if (boardParam) {
       const accts = this.decodeBoardParam(boardParam).map((a) => this.normalizeAccount(a));
       if (accts.length) {
@@ -588,6 +620,23 @@ class Component extends DCLogic {
     if (p.algorithm !== 'SHA-1') sp.set('algorithm', p.algorithm.replace('SHA-', ''));
     return location.origin + location.pathname + '#' + sp.toString();
   }
+
+  // —— 演示模式链接 ——
+  buildPresentUrl() {
+    const u = this.buildUrl();
+    if (!u) return '';
+    let x = u + '&present=1';
+    if (this.state.presentNolabel) x += '&nolabel=1';
+    return x;
+  }
+  // 活态进/出演示模式：同步 URL（replaceState，不触发 hashchange/重渲染闪烁）
+  setPresentParam(on) {
+    const params = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    if (on) { params.set('present', '1'); } else { params.delete('present'); params.delete('nolabel'); params.delete('view'); }
+    try { history.replaceState(null, document.title, location.pathname + location.search + '#' + params.toString()); } catch (e) {}
+  }
+  enterPresent() { this.setPresentParam(true); this.setState({ present: true, nolabel: false, showQr: false }); }
+  exitPresent() { this.setPresentParam(false); this.setState({ present: false, nolabel: false }); }
 
   copyText(text, key) {
     const done = () => {
@@ -991,6 +1040,14 @@ class Component extends DCLogic {
       };
     });
 
+    // —— 演示模式（present）：放大字号、隐藏会引出密钥的 UI ——
+    const isPresent = isView && s.present;
+    const nolabel = isPresent && s.nolabel;
+    const digitW = isPresent ? 'clamp(40px,11vw,70px)' : '46px';
+    const digitH = isPresent ? 'clamp(58px,15.5vw,100px)' : '66px';
+    const digitF = isPresent ? 'clamp(34px,9vw,58px)' : '40px';
+    const viewMaxW = isPresent ? '680px' : '400px';
+
     return {
       rootRef: this.rootRef,
       isView, isSetup: s.mode === 'setup',
@@ -998,7 +1055,7 @@ class Component extends DCLogic {
       useBar: progressStyle === 'bar',
       leftDigits: chars.slice(0, mid),
       rightDigits: chars.slice(mid),
-      labelName: s.label || s.issuer || '验证码',
+      labelName: nolabel ? '' : (s.label || s.issuer || '验证码'),
       secondsLeft: s.secondsLeft,
       ringR: R, ringC: C, ringOffset: C * (1 - frac),
       ringCsm: Csm, ringOffsetSm: Csm * (1 - frac),
@@ -1022,6 +1079,21 @@ class Component extends DCLogic {
       qrLabel: s.showQr ? '隐藏二维码' : '显示二维码 ⃞',
       showQr: s.showQr,
       qrDataUrl: s.qrDataUrl,
+
+      // —— 演示模式 ——
+      isPresent, showViewChrome: !isPresent,
+      digitW, digitH, digitF, viewMaxW,
+      onEnterPresent: () => this.enterPresent(),
+      onExitPresent: () => this.exitPresent(),
+      presentPanel: s.presentPanel,
+      presentToggleLabel: s.presentPanel ? '🖥 隐藏演示链接' : '🖥 演示模式链接',
+      nolabelLabel: s.presentNolabel ? '☑ 连账号名也隐藏' : '☐ 连账号名也隐藏',
+      presentUrl: this.buildPresentUrl(),
+      presentCopyLabel: s.presentUrlCopied ? '已复制 ✓' : '复制演示链接',
+      onTogglePresent: () => this.setState({ presentPanel: !this.state.presentPanel }),
+      onToggleNolabel: () => this.setState({ presentNolabel: !this.state.presentNolabel }),
+      onCopyPresentUrl: () => { const u = this.buildPresentUrl(); if (u) this.copyText(u, 'presentUrlCopied'); },
+      onOpenPresentUrl: () => { const u = this.buildPresentUrl(); if (u) location.href = u; },
 
       // —— 多号看板 ——
       isBoard: s.mode === 'board',

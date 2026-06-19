@@ -39,6 +39,7 @@ At its core it's deliberately tiny and **stateless**: open a link, get a code, c
 - 🤝 **Temporarily lend an account to a teammate / friend.** Send them the account's link; they open it and read the live code to sign in — without sharing your password-manager credentials or making them install an authenticator. *(The link carries the secret — share it over a trusted channel and rotate afterward.)*
 - ⚡ **One-off code.** Paste a secret on the home screen, read the code, close the tab. Stateless by design.
 - 📱 **Move a secret to your phone.** "Show QR" renders an `otpauth://` QR you can scan straight into Google Authenticator / Authy / any app.
+- 🖥️ **Show a code on a shared screen.** Append `&present=1` to any account link (or hit "🖥 演示模式") for a big, projector-friendly code with the QR and other controls hidden — screen-share or let someone read it without the secret QR ever appearing. *(On-screen protection only — the link still contains the secret and does not hide it from whoever you send it to.)*
 
 ## Features
 
@@ -46,6 +47,7 @@ At its core it's deliberately tiny and **stateless**: open a link, get a code, c
 - 🔗 **Every account is a link** — `#secret=…` lives in the URL hash, never sent to any server
 - 🧮 **Multi-account board** — drop a file of links (or scan a Google Authenticator migration QR) → a color-coded grid of live codes; export back to a `.txt` list or a single board link
 - 📷 **QR import** (scan a QR image) & **QR export** (`otpauth://` for your phone)
+- 🖥️ **Presentation mode** (`&present=1`) — shows just the big rotating code with the QR / secret-revealing UI hidden, for projecting or screen-sharing; honest about what it does (and doesn't) protect
 - 📲 **PWA** — installable to your home screen, works fully offline
 - 🚫 **No backend, no server-side storage, no telemetry** — secrets never touch a server (the board's cache is local-only and clearable)
 - 🪶 **Tiny & portable** — static files + vendored React; deploys anywhere
@@ -124,9 +126,11 @@ Easy2FA is built for **test / throwaway accounts** and trades some security for 
 - For **high-value accounts**, use a hardware key or a dedicated authenticator app instead.
 - Requires **HTTPS** (Web Crypto needs a secure context). `localhost` counts for local dev; `file://` does not.
 - The **multi-account board** stores its list in your browser's **localStorage** (a local cache — never synced anywhere by the app). Hit **Clear** to wipe it; your own file remains the real backup.
+- **Presentation mode** (`&present=1`) only guards against **on-screen** exposure of *your* session (shoulder-surfing / screen-share / recording) by hiding the QR. It does **not** protect the recipient of a link — the URL still contains the secret. It is not "secure sharing".
 
 ## Changelog
 
+- **2026-06** — **Presentation mode** (`&present=1`, optional `&nolabel=1`): a big, projector-friendly code with the QR and editing controls hidden, for screen-sharing without exposing the secret QR. Honest scope — it guards your screen, not the link's recipient.
 - **2026-06** — **Multi-account board**: import a list file / paste / clipboard / Google Authenticator migration QR → a live, color-coded grid of codes (one timer drives them all). Export back to a `.txt` list or a single `#board=…` link. The board keeps an optional, one-click-clearable local cache — your file stays the source of truth.
 - **2026-06** — Initial release: stateless single-account view, paste-a-secret setup with bookmark links, QR import / export, PWA + offline.
 
