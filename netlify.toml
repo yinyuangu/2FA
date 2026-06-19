@@ -1,0 +1,5 @@
+# Netlify: pure static, no build step. Publish the repo root as-is.
+# (No SPA catch-all redirect — every path is a real file and routing is client-side via the URL hash.)
+[build]
+  publish = "."
+  command = ""

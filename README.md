@@ -8,6 +8,8 @@
 
 **A stateless, self-hosted TOTP (2FA) code generator — no backend, no database, no tracking. Your secret never leaves your browser.**
 
+**⚡ Dead-simple to deploy · 🆓 Free forever · 🧰 Zero maintenance**
+
 English · [简体中文](README.zh-CN.md)
 
 </div>
@@ -16,13 +18,13 @@ English · [简体中文](README.zh-CN.md)
 
 ## 🚀 One-click deploy
 
-> Pure static, **no build step** — pick a host and it just works. (Forking? Point the links at your own fork.)
+> Pure static, **no build step**. Each button **clones this repo into your own GitHub account and deploys it** — so you get your own free, auto-updating copy. Config files in the repo (`wrangler.jsonc` / `netlify.toml` / `vercel.json`) make every deploy zero-config.
 
-[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zeropl/2FA)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zeropl/2FA)
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/zeropl/2FA)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/zeropl/2FA)
 
-Prefer **GitHub Pages** or self-hosting? See the detailed **[Deployment](#deployment)** guide below.
+Prefer **GitHub Pages**, or want to fork first? See the detailed **[Deployment](#deployment)** guide below.
 
 ---
 
@@ -63,38 +65,45 @@ At its core it's deliberately tiny and **stateless**: open a link, get a code, c
 
 ## Deployment
 
-Easy2FA is **pure static** — `index.html` + `support.js` + `vendor/`. There is **nothing to build**: every host below serves the files as-is. The only hard requirement is **HTTPS**, because the Web Crypto API (used to compute codes) needs a secure context. Every option below provides HTTPS automatically; for local testing, `localhost` also counts as secure (but `file://` does not).
+Easy2FA is **pure static** — `index.html` + `support.js` + `vendor/`, **nothing to build**. The only hard requirement is **HTTPS** (the Web Crypto API needs a secure context); every option below provides it automatically (`localhost` also counts for local testing, but `file://` does not).
 
-### GitHub Pages — free, zero config
+**The simplest path is the same everywhere: get your own copy, then connect it.**
 
-1. Push this repo to GitHub (done ✅).
-2. Repo → **Settings** → **Pages**.
+> **Why fork first?** A fork is *your* copy of the repo. The platform watches it and **auto-redeploys on every push**, you can tweak it freely, and it's all on a free tier with nothing to maintain. The one-click buttons above actually do the fork for you — each clones this repo into your account and deploys that clone. Prefer to fork by hand? Click **Fork** on GitHub first, then use the "import / connect Git" flow on any platform below and pick your fork.
+
+The repo ships per-platform config (`wrangler.jsonc`, `netlify.toml`, `vercel.json`, `.nojekyll`), so there are **no build settings to fill in** — just authorize and deploy.
+
+### GitHub Pages — free, no button needed
+
+1. **Fork** this repo to your account.
+2. Your fork → **Settings** → **Pages**.
 3. **Source:** "Deploy from a branch" → **Branch:** `main` → **Folder:** `/ (root)` → **Save**.
-4. Wait ~1 minute. Your site is live at `https://<your-username>.github.io/<repo>/` — e.g. **https://zeropl.github.io/2FA/**.
+4. Wait ~1 minute. Live at `https://<your-username>.github.io/2FA/` (the path is case-sensitive — it matches the repo name `2FA`).
 
-> It runs correctly under the `/2FA/` sub-path because the app uses **relative** asset paths and a `./` service-worker scope.
+> Runs correctly under the `/2FA/` sub-path because the app uses **relative** asset paths and a `./` service-worker scope. An empty [`.nojekyll`](.nojekyll) is included so Pages serves every file verbatim.
 
-### Cloudflare Pages
+### Cloudflare
 
-- **One-click:** use the Cloudflare button at the top, **or**
-- **Manual:** Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git** → pick this repo →
-  - **Framework preset:** `None`
-  - **Build command:** *(leave empty)*
-  - **Build output directory:** `/`
-  - **Save and Deploy** → you get a `*.pages.dev` URL.
+> Cloudflare retired *Pages* for new projects in 2025 — the button now creates a **Worker that serves your static assets** (same result: a free `*.workers.dev` HTTPS URL).
+
+- **One-click:** the **Deploy to Cloudflare** button above (clones the repo into your account and deploys), **or**
+- **Fork + import:** Cloudflare dashboard → **Workers & Pages** → **Create** → **Import a repository** → pick your fork → leave the build settings empty → **Deploy**.
+
+The included [`wrangler.jsonc`](wrangler.jsonc) (`assets.directory: "./"`) makes this zero-config — no framework, no build command, no output directory to set.
 
 ### Netlify
 
-- **One-click:** use the Netlify button at the top, **or**
-- **Import:** Netlify → **Add new site** → **Import an existing project** → pick this repo →
-  - **Build command:** *(empty)* · **Publish directory:** `.` (root) → **Deploy**.
-- **No Git at all:** you can even drag-and-drop the project folder onto the Netlify dashboard.
+- **One-click:** the **Deploy to Netlify** button above (clones + deploys), **or**
+- **Fork + import:** Netlify → **Add new project** → **Import an existing project** → **GitHub** → authorize → pick your fork → leave **Build command** and **Publish directory** at their defaults → **Deploy**.
+
+[`netlify.toml`](netlify.toml) pins `publish = "."` (repo root) with no build command. *(Use the button **or** a manual fork+import — not both, or you'll end up with two copies.)*
 
 ### Vercel
 
-- **One-click:** use the Vercel button at the top, **or**
-- **Import:** Vercel → **Add New** → **Project** → import this repo →
-  - **Framework Preset:** `Other` · leave **Build** & **Output** empty → **Deploy**.
+- **One-click:** the **Deploy with Vercel** button above (clones + deploys), **or**
+- **Fork + import:** Vercel → **Add New… → Project** → **Import Git Repository** → pick your fork → **Framework Preset:** `Other`, leave **Build** & **Output** empty → **Deploy**.
+
+[`vercel.json`](vercel.json) pins the `Other` preset (`"framework": null`) with no build step and the repo root as output.
 
 ### Self-host (any static server)
 
@@ -109,7 +118,7 @@ python3 -m http.server 8000
 
 For a real server use nginx / Caddy / Apache with a TLS certificate. Plain HTTP (non-localhost) or opening `index.html` via `file://` will **not** compute codes — Web Crypto refuses to run outside a secure context.
 
-> **Updating a deployed copy:** after you change any static file and redeploy, bump `CACHE` in [`sw.js`](sw.js) (e.g. `2fa-v3` → `2fa-v4`) so the service worker serves the new version instead of the cached one.
+> **Updating a deployed copy:** after you change any static file and redeploy, bump `CACHE` in [`sw.js`](sw.js) (e.g. `2fa-v5` → `2fa-v6`) so the service worker serves the new version instead of the cached one.
 
 ## How it works
 
@@ -130,6 +139,7 @@ Easy2FA is built for **test / throwaway accounts** and trades some security for 
 
 ## Changelog
 
+- **2026-06** — **Zero-config deploy**: shipped `wrangler.jsonc` / `netlify.toml` / `vercel.json` / `.nojekyll` and a fork-first deploy guide, so deploying to any platform is just "authorize → pick your fork → deploy" with no build settings. Corrected the Cloudflare button (it now creates a Worker with static assets, not Pages).
 - **2026-06** — **Presentation mode** (`&present=1`, optional `&nolabel=1`): a big, projector-friendly code with the QR and editing controls hidden, for screen-sharing without exposing the secret QR. Honest scope — it guards your screen, not the link's recipient.
 - **2026-06** — **Multi-account board**: import a list file / paste / clipboard / Google Authenticator migration QR → a live, color-coded grid of codes (one timer drives them all). Export back to a `.txt` list or a single `#board=…` link. The board keeps an optional, one-click-clearable local cache — your file stays the source of truth.
 - **2026-06** — Initial release: stateless single-account view, paste-a-secret setup with bookmark links, QR import / export, PWA + offline.
