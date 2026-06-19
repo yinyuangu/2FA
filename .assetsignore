@@ -1,0 +1,15 @@
+# Cloudflare static-assets ignore (gitignore syntax). Keep non-app files out of the deploy.
+.git
+.github
+.claude
+node_modules
+.wrangler
+.gitignore
+.assetsignore
+.nojekyll
+*.md
+LICENSE
+wrangler.jsonc
+netlify.toml
+vercel.json
+assets
