@@ -4,146 +4,146 @@
 
 ![Easy2FA](assets/cover.png)
 
-### _The tool that keeps your secrets should be entirely your own._
+### _存放密钥的工具，理应完全掌握在自己手中。_
 
-**A stateless, self-hosted TOTP (2FA) code generator — no backend, no database, no tracking. Your secret never leaves your browser.**
+**无状态、可自部署的 TOTP（两步验证）验证码工具——无后端、无数据库、无追踪，密钥永不离开你的浏览器。**
 
-**⚡ Dead-simple to deploy · 🆓 Free forever · 🧰 Zero maintenance**
+**⚡ 极简部署 · 🆓 永久免费 · 🧰 完全免维护**
 
-English · [简体中文](README.zh-CN.md)
+简体中文 · [English](README.en.md)
 
 </div>
 
 ---
 
-## 🚀 One-click deploy
+## 🚀 一键部署
 
-> Pure static, **no build step**. Each button **clones this repo into your own GitHub account and deploys it** — so you get your own free, auto-updating copy. Config files in the repo (`wrangler.jsonc` / `netlify.toml` / `vercel.json`) make every deploy zero-config.
+> 纯静态、**无构建步骤**。每个按钮都会**把本仓库 clone 进你自己的 GitHub 账号再部署**——于是你得到一份自己的、免费且自动更新的副本。仓库里自带各平台配置（`wrangler.jsonc` / `netlify.toml` / `vercel.json`），部署零配置。
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zeropl/2FA)
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/zeropl/2FA)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/zeropl/2FA)
 
-Prefer **GitHub Pages**, or want to fork first? See the detailed **[Deployment](#deployment)** guide below.
+想用 **GitHub Pages**、或想先自己 fork？见下方详细的 **[部署说明](#部署说明)**。
 
 ---
 
-## What is this?
+## 这是什么？
 
-Easy2FA turns a 2FA secret into its live 6-digit code, entirely in your browser. There's no server, no sign-up, and no database — each "account" is just a **bookmarkable URL** with the secret in its `#fragment` (which browsers never send over the network).
+Easy2FA 在你的浏览器里把一个 2FA 密钥算成实时的 6 位验证码。没有服务器、不用注册、没有数据库——每个"账号"就是一条**可收藏的网址**，密钥藏在它的 `#` 片段里（浏览器永远不会把 `#` 片段发到网络上）。
 
-At its core it's deliberately tiny and **stateless**: open a link, get a code, close it — nothing stored. Need to watch many accounts at once? The optional **multi-account board** keeps a local, one-click-clearable cache, with your own list file as the source of truth. Perfect for juggling **lots of throwaway / test-account 2FA secrets** without an app or sync.
+它的核心刻意做得极小、**无状态**：打开链接、看码、关掉，什么都不留。要同时盯很多账号？可选的**多号看板**会在本地留一份可一键清空的缓存，而你自己的链接列表文件才是底账。特别适合在不装 App、不做同步的情况下，管理**一大堆一次性 / 测试号的 2FA 密钥**。
 
-## Why / when to use it
+## 用来做什么 / 什么场景用
 
-- 🧮 **Watch many accounts on one screen.** Drag a `.txt` / `.md` / `.yaml` file of account links onto the page (or paste them, or scan a **Google Authenticator export QR**) → a live, color-coded grid of every code at once. Your file stays the source of truth; the board only caches it locally and can be cleared anytime.
-- 🗂️ **You manage many test accounts.** Save each one as a bookmark (`…/#secret=…&label=acme-test`). Click a bookmark → instantly see that account's current code. No authenticator app, no account list to maintain, nothing to sync. A "Test Accounts" bookmark folder becomes your dashboard.
-- 🤝 **Temporarily lend an account to a teammate / friend.** Send them the account's link; they open it and read the live code to sign in — without sharing your password-manager credentials or making them install an authenticator. *(The link carries the secret — share it over a trusted channel and rotate afterward.)*
-- ⚡ **One-off code.** Paste a secret on the home screen, read the code, close the tab. Stateless by design.
-- 📱 **Move a secret to your phone.** "Show QR" renders an `otpauth://` QR you can scan straight into Google Authenticator / Authy / any app.
-- 🖥️ **Show a code on a shared screen.** Append `&present=1` to any account link (or hit "🖥 演示模式") for a big, projector-friendly code with the QR and other controls hidden — screen-share or let someone read it without the secret QR ever appearing. *(On-screen protection only — the link still contains the secret and does not hide it from whoever you send it to.)*
+- 🧮 **一屏看到多个号的码。** 把一个 `.txt` / `.md` / `.yaml` 的账号链接文件拖到页面上（或粘贴，或扫 **Google Authenticator 导出二维码**）→ 整屏彩色网格，所有码一次看全。你的文件始终是底账；看板只在本地缓存，随时可清空。
+- 🗂️ **管理很多测试号。** 把每个号存成一条书签（`…/#secret=…&label=acme-test`）。点一下书签 → 立刻看到该号当前的验证码。不用装验证器 App、不用维护账号列表、不用同步。一个"测试号"书签文件夹就是你的总览面板。
+- 🤝 **把账号临时借给同事 / 好友用一下。** 把该账号的链接发给对方，对方打开就能读到实时验证码登录——既不用把你的密码管理器凭据给他，也不用让他装验证器。*（链接里带着密钥，请通过可信渠道发送，用完及时轮换密钥。）*
+- ⚡ **临时算一次码。** 在首页粘贴密钥、读出验证码、关掉标签页。天生无状态，什么都不存。
+- 📱 **把密钥导到手机。** 点"显示二维码"，生成 `otpauth://` 二维码，直接扫进 Google Authenticator / Authy / 任意验证器 App。
+- 🖥️ **把码投到大屏 / 录屏。** 给任意账号链接加 `&present=1`（或点"🖥 演示模式"），切换到放大的验证码、隐藏二维码和其它控件——投屏、共享屏幕或当面给人读时，密钥二维码绝不出现在屏幕上。*（只防你这边屏幕暴露——链接本身仍含密钥，不会对收到链接的人隐藏。）*
 
-## Features
+## 功能
 
-- 🔐 **Real TOTP** (RFC 6238) computed locally via Web Crypto — SHA-1/256/512, configurable digits & period
-- 🔗 **Every account is a link** — `#secret=…` lives in the URL hash, never sent to any server
-- 🧮 **Multi-account board** — drop a file of links (or scan a Google Authenticator migration QR) → a color-coded grid of live codes; export back to a `.txt` list or a single board link
-- 📷 **QR import** (scan a QR image) & **QR export** (`otpauth://` for your phone)
-- 🖥️ **Presentation mode** (`&present=1`) — shows just the big rotating code with the QR / secret-revealing UI hidden, for projecting or screen-sharing; honest about what it does (and doesn't) protect
-- 📲 **PWA** — installable to your home screen, works fully offline
-- 🚫 **No backend, no server-side storage, no telemetry** — secrets never touch a server (the board's cache is local-only and clearable)
-- 🪶 **Tiny & portable** — static files + vendored React; deploys anywhere
+- 🔐 **标准 TOTP**（RFC 6238），用 Web Crypto 本地计算——支持 SHA-1/256/512、可配位数与周期
+- 🔗 **每个账号就是一条链接**——`#secret=…` 在 URL hash 里，绝不发往任何服务器
+- 🧮 **多号看板**——拖入链接文件（或扫 Google Authenticator 迁移码）→ 彩色网格实时显示所有码；可导回 `.txt` 列表或一条看板链接
+- 📷 **二维码导入**（扫一张二维码图）& **二维码导出**（`otpauth://`，方便导到手机）
+- 🖥️ **演示模式**（`&present=1`）——只显示放大的滚动验证码、隐藏二维码等会引出密钥的 UI，便于投屏 / 录屏；对它"防什么、不防什么"如实说明
+- 📲 **PWA**——可添加到主屏、完全离线可用
+- 🚫 **无后端、无服务端存储、无埋点**——密钥永不接触服务器（看板的缓存仅在本地、可清空）
+- 🪶 **小巧可移植**——纯静态文件 + 内置 React，哪里都能部署
 
-## Screenshots
+## 截图
 
 <p align="center">
-  <img src="assets/screenshot-view.png" width="31%" alt="Live code view" />
-  <img src="assets/screenshot-setup.png" width="31%" alt="Add a secret" />
-  <img src="assets/screenshot-qr.png" width="31%" alt="QR export" />
+  <img src="assets/screenshot-view.png" width="31%" alt="实时验证码" />
+  <img src="assets/screenshot-setup.png" width="31%" alt="录入密钥" />
+  <img src="assets/screenshot-qr.png" width="31%" alt="二维码导出" />
 </p>
-<p align="center"><sub>Live code &amp; countdown · Paste a secret → instant code + bookmark link · Export as <code>otpauth://</code> QR</sub></p>
+<p align="center"><sub>实时验证码与倒计时 · 粘贴密钥即出码 + 生成专属书签链接 · 导出为 <code>otpauth://</code> 二维码</sub></p>
 
-## Deployment
+## 部署说明
 
-Easy2FA is **pure static** — `index.html` + `support.js` + `vendor/`, **nothing to build**. The only hard requirement is **HTTPS** (the Web Crypto API needs a secure context); every option below provides it automatically (`localhost` also counts for local testing, but `file://` does not).
+Easy2FA 是**纯静态**的——`index.html` + `support.js` + `vendor/`，**没有任何构建步骤**。唯一的硬性要求是 **HTTPS**（计算验证码的 Web Crypto API 需要安全上下文）；下面每个方案都自带 HTTPS（本地测试 `localhost` 也算，`file://` 不算）。
 
-**The simplest path is the same everywhere: get your own copy, then connect it.**
+**所有平台最省心的路径都一样：先有一份属于你自己的副本，再连上它。**
 
-> **Why fork first?** A fork is *your* copy of the repo. The platform watches it and **auto-redeploys on every push**, you can tweak it freely, and it's all on a free tier with nothing to maintain. The one-click buttons above actually do the fork for you — each clones this repo into your account and deploys that clone. Prefer to fork by hand? Click **Fork** on GitHub first, then use the "import / connect Git" flow on any platform below and pick your fork.
+> **为什么要先 fork？** fork 就是*你自己的*一份仓库拷贝。平台会盯着它，**每次 push 自动重新部署**，你可以随便改，而且全在免费额度内、零维护。上面的一键按钮其实已经替你 fork 了——每个按钮都会把本仓库 clone 进你的账号再部署那份拷贝。想自己动手 fork？先在 GitHub 点 **Fork**，再到下面任意平台用「导入 / 连接 Git」选你的 fork 即可。
 
-The repo ships per-platform config (`wrangler.jsonc`, `netlify.toml`, `vercel.json`, `.nojekyll`), so there are **no build settings to fill in** — just authorize and deploy.
+仓库自带各平台配置（`wrangler.jsonc`、`netlify.toml`、`vercel.json`、`.nojekyll`），所以**没有任何构建项要填**——授权一下就能部署。
 
-### GitHub Pages — free, no button needed
+### GitHub Pages —— 免费，无需按钮
 
-1. **Fork** this repo to your account.
-2. Your fork → **Settings** → **Pages**.
-3. **Source:** "Deploy from a branch" → **Branch:** `main` → **Folder:** `/ (root)` → **Save**.
-4. Wait ~1 minute. Live at `https://<your-username>.github.io/2FA/` (the path is case-sensitive — it matches the repo name `2FA`).
+1. 把本仓库 **Fork** 到你的账号。
+2. 你的 fork → **Settings** → **Pages**。
+3. **Source：** 选 "Deploy from a branch" → **Branch：** `main` → **Folder：** `/ (root)` → **Save**。
+4. 等约 1 分钟。站点地址为 `https://<你的用户名>.github.io/2FA/`（路径区分大小写，要和仓库名 `2FA` 一致）。
 
-> Runs correctly under the `/2FA/` sub-path because the app uses **relative** asset paths and a `./` service-worker scope. An empty [`.nojekyll`](.nojekyll) is included so Pages serves every file verbatim.
+> 之所以在 `/2FA/` 子路径下也能跑，是因为应用全程用**相对路径**、Service Worker 作用域为 `./`。仓库自带一个空的 [`.nojekyll`](.nojekyll)，让 Pages 原样托管所有文件。
 
 ### Cloudflare
 
-> Cloudflare retired *Pages* for new projects in 2025 — the button now creates a **Worker that serves your static assets** (same result: a free `*.workers.dev` HTTPS URL).
+> Cloudflare 已于 2025 年对新项目停用 *Pages*——按钮现在创建的是一个**服务静态资源的 Worker**（结果一样：一个免费的 `*.workers.dev` HTTPS 地址）。
 
-- **One-click:** the **Deploy to Cloudflare** button above (clones the repo into your account and deploys), **or**
-- **Fork + import:** Cloudflare dashboard → **Workers & Pages** → **Create** → **Import a repository** → pick your fork → leave the build settings empty → **Deploy**.
+- **一键：** 顶部的 **Deploy to Cloudflare** 按钮（会把仓库 clone 进你的账号再部署），**或**
+- **fork 后导入：** Cloudflare 控制台 → **Workers & Pages** → **Create** → **Import a repository** → 选你的 fork → 构建项全部留空 → **Deploy**。
 
-The included [`wrangler.jsonc`](wrangler.jsonc) (`assets.directory: "./"`) makes this zero-config — no framework, no build command, no output directory to set.
+仓库自带的 [`wrangler.jsonc`](wrangler.jsonc)（`assets.directory: "./"`）让它零配置——不用选框架、不用填构建命令、不用设输出目录。
 
 ### Netlify
 
-- **One-click:** the **Deploy to Netlify** button above (clones + deploys), **or**
-- **Fork + import:** Netlify → **Add new project** → **Import an existing project** → **GitHub** → authorize → pick your fork → leave **Build command** and **Publish directory** at their defaults → **Deploy**.
+- **一键：** 顶部的 **Deploy to Netlify** 按钮（clone + 部署），**或**
+- **fork 后导入：** Netlify → **Add new project** → **Import an existing project** → **GitHub** → 授权 → 选你的 fork → **Build command** 和 **Publish directory** 都保持默认 → **Deploy**。
 
-[`netlify.toml`](netlify.toml) pins `publish = "."` (repo root) with no build command. *(Use the button **or** a manual fork+import — not both, or you'll end up with two copies.)*
+[`netlify.toml`](netlify.toml) 已固定 `publish = "."`（根目录）、无构建命令。*（按钮**或**手动 fork+导入，二选一，别两个都做，否则会有两份拷贝。）*
 
 ### Vercel
 
-- **One-click:** the **Deploy with Vercel** button above (clones + deploys), **or**
-- **Fork + import:** Vercel → **Add New… → Project** → **Import Git Repository** → pick your fork → **Framework Preset:** `Other`, leave **Build** & **Output** empty → **Deploy**.
+- **一键：** 顶部的 **Deploy with Vercel** 按钮（clone + 部署），**或**
+- **fork 后导入：** Vercel → **Add New… → Project** → **Import Git Repository** → 选你的 fork → **Framework Preset：** `Other`，**Build** 与 **Output** 留空 → **Deploy**。
 
-[`vercel.json`](vercel.json) pins the `Other` preset (`"framework": null`) with no build step and the repo root as output.
+[`vercel.json`](vercel.json) 已固定 `Other` 预设（`"framework": null`）、无构建步骤、以仓库根目录为输出。
 
-### Self-host (any static server)
+### 自己托管（任意静态服务器）
 
-It's just a folder of static files — serve it with whatever you like, over **HTTPS**:
+它就是一个静态文件夹，用什么托管都行，但要走 **HTTPS**：
 
 ```bash
-# local dev (localhost is a secure context, so codes work)
+# 本地开发（localhost 是安全上下文，验证码能正常算）
 npx serve .
-# or
+# 或
 python3 -m http.server 8000
 ```
 
-For a real server use nginx / Caddy / Apache with a TLS certificate. Plain HTTP (non-localhost) or opening `index.html` via `file://` will **not** compute codes — Web Crypto refuses to run outside a secure context.
+正式服务器请用 nginx / Caddy / Apache 并配 TLS 证书。纯 HTTP（非 localhost）或用 `file://` 直接打开 `index.html` **都算不出验证码**——Web Crypto 拒绝在非安全上下文运行。
 
-> **Updating a deployed copy:** after you change any static file and redeploy, bump `CACHE` in [`sw.js`](sw.js) (e.g. `2fa-v5` → `2fa-v6`) so the service worker serves the new version instead of the cached one.
+> **更新已部署的版本：** 改动任何静态文件并重新部署后，记得提升 [`sw.js`](sw.js) 里的 `CACHE` 版本号（如 `2fa-v5` → `2fa-v6`），否则 Service Worker 会继续喂旧缓存。
 
-## How it works
+## 工作原理
 
-- The 6-digit code is computed in-browser with `crypto.subtle` (HMAC) — standard RFC 6238 TOTP.
-- The secret is read from `location.hash`. **URL fragments are not included in HTTP requests**, so the secret never leaves your device over the network — even on a hosted deploy, the server only ever sees a request for a static file.
-- React / ReactDOM are **vendored** under `vendor/` (no CDN dependency → loads even on flaky networks, and is integrity-pinned).
+- 6 位验证码由浏览器用 `crypto.subtle`（HMAC）本地算出——标准 RFC 6238 TOTP。
+- 密钥从 `location.hash` 读取。**URL 的 `#` 片段不会进入 HTTP 请求**，所以密钥永不经网络离开你的设备——即便部署在线上，服务器看到的也只是一次静态文件请求。
+- React / ReactDOM 已 **vendoring** 到 `vendor/`（不依赖 CDN → 网络差也能开，且做了完整性校验）。
 
-## Security notes
+## 安全须知
 
-Easy2FA is built for **test / throwaway accounts** and trades some security for convenience. Know the tradeoffs:
+Easy2FA 是为**测试 / 一次性账号**设计的，用一部分安全性换取便利。请了解其中取舍：
 
-- The secret lives **in the URL**, so it ends up in your **browser history and bookmarks** — and is **synced to the cloud** if your browser syncs bookmarks/history. Treat the links as sensitive.
-- Anyone you hand a link to gets the secret. Share over trusted channels; rotate after temporary sharing.
-- For **high-value accounts**, use a hardware key or a dedicated authenticator app instead.
-- Requires **HTTPS** (Web Crypto needs a secure context). `localhost` counts for local dev; `file://` does not.
-- The **multi-account board** stores its list in your browser's **localStorage** (a local cache — never synced anywhere by the app). Hit **Clear** to wipe it; your own file remains the real backup.
-- **Presentation mode** (`&present=1`) only guards against **on-screen** exposure of *your* session (shoulder-surfing / screen-share / recording) by hiding the QR. It does **not** protect the recipient of a link — the URL still contains the secret. It is not "secure sharing".
+- 密钥在 **URL 里**，因此会进入你的**浏览器历史和书签**——如果浏览器开了书签/历史云同步，它也会**被同步到云端**。请把这些链接当作敏感信息。
+- 你把链接发给谁，谁就拿到了密钥。请走可信渠道；临时分享后请轮换密钥。
+- **重要 / 高价值账号**请改用硬件密钥或专门的验证器 App。
+- 需要 **HTTPS**（Web Crypto 要求安全上下文）。本地开发用 `localhost` 可以；`file://` 不行。
+- **多号看板**会把列表存进浏览器的 **localStorage**（仅本地缓存，应用本身绝不同步到任何地方）。点「清空」即可抹掉；你自己的文件才是真正的备份。
+- **演示模式**（`&present=1`）只防**你这边屏幕**暴露（肩窥 / 共享屏幕 / 录屏）——靠隐藏二维码实现。它**不保护**收到链接的人：URL 里仍然带着密钥。它不是"安全分享"。
 
-## Changelog
+## 更新记录
 
-- **2026-06** — **Zero-config deploy**: shipped `wrangler.jsonc` / `netlify.toml` / `vercel.json` / `.nojekyll` and a fork-first deploy guide, so deploying to any platform is just "authorize → pick your fork → deploy" with no build settings. Corrected the Cloudflare button (it now creates a Worker with static assets, not Pages).
-- **2026-06** — **Presentation mode** (`&present=1`, optional `&nolabel=1`): a big, projector-friendly code with the QR and editing controls hidden, for screen-sharing without exposing the secret QR. Honest scope — it guards your screen, not the link's recipient.
-- **2026-06** — **Multi-account board**: import a list file / paste / clipboard / Google Authenticator migration QR → a live, color-coded grid of codes (one timer drives them all). Export back to a `.txt` list or a single `#board=…` link. The board keeps an optional, one-click-clearable local cache — your file stays the source of truth.
-- **2026-06** — Initial release: stateless single-account view, paste-a-secret setup with bookmark links, QR import / export, PWA + offline.
+- **2026-06** — **零配置部署**：补齐 `wrangler.jsonc` / `netlify.toml` / `vercel.json` / `.nojekyll` 和 fork 优先的部署教程，到任意平台都是"授权 → 选你的 fork → 部署"，没有构建项要填。并更正了 Cloudflare 按钮（它现在创建的是带静态资源的 Worker，不是 Pages）。
+- **2026-06** — **演示模式**（`&present=1`，可选 `&nolabel=1`）：放大的验证码 + 隐藏二维码和编辑控件，便于共享屏幕而不暴露密钥二维码。如实界定边界——它防的是你的屏幕，不是链接接收方。
+- **2026-06** — **多号看板**：从列表文件 / 粘贴 / 剪贴板 / Google Authenticator 迁移码导入 → 彩色网格实时显示所有码（一个定时器驱动全部）。可导回 `.txt` 列表或一条 `#board=…` 链接。看板在本地留一份可一键清空的缓存——你的文件始终是底账。
+- **2026-06** — 首个版本：无状态单账号视图、粘贴密钥即出码 + 专属书签链接、二维码导入 / 导出、PWA + 离线。
 
-## License
+## 许可
 
 [MIT](LICENSE)
