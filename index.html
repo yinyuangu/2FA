@@ -7,7 +7,8 @@
 <title>2FA</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306090c'/%3E%3Cpath d='M32 8 52 16v14c0 13-8.5 21-20 26-11.5-5-20-13-20-26V16z' fill='none' stroke='%2322d3ee' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M23 32l7 7 12-13' fill='none' stroke='%2322d3ee' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="manifest" href="./manifest.json">
-<script src="./vendor/qrcode.js"></script>
+<!-- qrcode.js（57KB）只在点"显示二维码"时才用——defer 让它不阻塞首屏（toggleQr 已守卫 typeof qrcode） -->
+<script src="./vendor/qrcode.js" defer></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -247,7 +248,7 @@
         <div style="display:flex;gap:9px;flex-wrap:wrap;">
           <button onClick="{{ onToggleImport }}" style="height:38px;padding:0 16px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">＋ 导入</button>
           <button onClick="{{ onExport }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">导出</button>
-          <button onClick="{{ onClearBoard }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:rgba(234,242,245,.7);font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(251,113,133,.14);border-color:rgba(251,113,133,.4);color:#fb7185;">清空</button>
+          <button onClick="{{ onClearBoard }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:rgba(234,242,245,.7);font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(251,113,133,.14);border-color:rgba(251,113,133,.4);color:#fb7185;">{{ clearLabel }}</button>
           <button onClick="{{ onGoSetup }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">单条</button>
         </div>
       </div>
@@ -334,7 +335,7 @@ class Component extends DCLogic {
     // —— 多号看板 ——
     accounts: [], boardLive: [], copiedIdx: null,
     importOpen: false, exportOpen: false, boardMsg: '', dragging: false,
-    pasteValue: '', linksCopied: false, boardUrlCopied: false,
+    pasteValue: '', linksCopied: false, boardUrlCopied: false, clearArmed: false,
     // —— 演示模式 ——
     present: false, nolabel: false,
     presentPanel: false, presentNolabel: false, presentUrlCopied: false,
@@ -357,12 +358,25 @@ class Component extends DCLogic {
     this.loadFromHash();
     this.registerSW();
   }
-  componentDidUpdate() { this.applyAccent(); }
+  componentDidUpdate(prevProps, prevState) {
+    this.applyAccent();
+    // 提示消息（导入结果/错误）几秒后自动消失，否则会一直挂着像个持续问题
+    const msg = this.state.boardMsg || this.state.importMsg;
+    const prevMsg = (prevState && (prevState.boardMsg || prevState.importMsg)) || '';
+    if (msg && msg !== prevMsg) {
+      clearTimeout(this._msgT);
+      this._msgT = setTimeout(() => {
+        if (this.state.boardMsg || this.state.importMsg) this.setState({ boardMsg: '', importMsg: '' });
+      }, 3800);
+    }
+  }
   componentWillUnmount() {
     clearInterval(this._tick);
     clearInterval(this._anim);
     clearTimeout(this._parseT);
     clearTimeout(this._copiedT);
+    clearTimeout(this._clearT);
+    clearTimeout(this._msgT);
     window.removeEventListener('hashchange', this._onHash);
     window.removeEventListener('dragover', this._onDragOver);
     window.removeEventListener('dragleave', this._onDragLeave);
@@ -378,7 +392,8 @@ class Component extends DCLogic {
 
   applyAccent() {
     const a = this.props.accentColor ?? '#22d3ee';
-    if (this.rootRef.current) this.rootRef.current.style.setProperty('--accent', a);
+    // accent 来自 props、运行时基本不变——只在变化时写 DOM，避免每秒 componentDidUpdate 都触发样式写入
+    if (a !== this._lastAccent && this.rootRef.current) { this.rootRef.current.style.setProperty('--accent', a); this._lastAccent = a; }
   }
 
   loadFromHash() {
@@ -737,6 +752,14 @@ class Component extends DCLogic {
       return data.map((d) => this.normalizeAccount({ secret: d.s, label: d.l, issuer: d.i, digits: d.d, period: d.p, algorithm: d.a }))
                  .filter((a) => this.base32Decode(a.secret));
     } catch (e) { return []; }
+  }
+  // 清空是破坏性操作——两步确认：第一次点武装、2s 内再点才真清（仍是一键级，只是防误触）
+  armOrClear() {
+    if (this._clearArmed) { clearTimeout(this._clearT); this._clearArmed = false; this.setState({ clearArmed: false }); this.clearBoard(); return; }
+    this._clearArmed = true;
+    this.setState({ clearArmed: true });
+    clearTimeout(this._clearT);
+    this._clearT = setTimeout(() => { this._clearArmed = false; this.setState({ clearArmed: false }); }, 2200);
   }
   clearBoard() {
     try { localStorage.removeItem('easy2fa.board'); } catch (e) {}
@@ -1109,7 +1132,7 @@ class Component extends DCLogic {
       hasParsed: !!s.parsed,
       error: s.error,
       importMsg: s.importMsg,
-      url: this.buildUrl(),
+      url: s.parsed ? this.buildUrl() : '', // 书签链接只在解析成功（书签面板可见）时才拼
       urlCopyLabel: s.urlCopied ? '已复制 ✓' : '复制链接',
       onCopyUrl: () => { const u = this.buildUrl(); if (u) this.copyText(u, 'urlCopied'); },
       onOpenUrl: () => { const u = this.buildUrl(); if (u) location.href = u; },
@@ -1127,7 +1150,7 @@ class Component extends DCLogic {
       presentPanel: s.presentPanel,
       presentToggleLabel: s.presentPanel ? '🖥 隐藏演示链接' : '🖥 演示模式链接',
       nolabelLabel: s.presentNolabel ? '☑ 连账号名也隐藏' : '☐ 连账号名也隐藏',
-      presentUrl: this.buildPresentUrl(),
+      presentUrl: s.presentPanel ? this.buildPresentUrl() : '', // 演示链接只在演示面板打开时才拼
       presentCopyLabel: s.presentUrlCopied ? '已复制 ✓' : '复制演示链接',
       onTogglePresent: () => this.setState({ presentPanel: !this.state.presentPanel }),
       onToggleNolabel: () => this.setState({ presentNolabel: !this.state.presentNolabel }),
@@ -1145,12 +1168,13 @@ class Component extends DCLogic {
       boardMsg: s.boardMsg,
       dragging: s.dragging,
       pasteValue: s.pasteValue,
-      exportText: this.exportLinks(),
+      exportText: s.exportOpen ? this.exportLinks() : '', // 只在导出面板打开时才拼全部链接，省去每秒重建
       onGoBoard: () => this.goBoard(),
       onGoSetup: () => this.goSetup(),
       onToggleImport: () => this.setState({ importOpen: !this.state.importOpen, exportOpen: false, boardMsg: '' }),
       onExport: () => this.setState({ exportOpen: !this.state.exportOpen, importOpen: false }),
-      onClearBoard: () => this.clearBoard(),
+      onClearBoard: () => this.armOrClear(),
+      clearLabel: s.clearArmed ? '再点一次确认清空' : '清空',
       onPickFile: () => this.pickFile(),
       onScanBoard: () => this.scanImportBoard(),
       onPasteImport: (e) => this.setState({ pasteValue: e.target.value }),
