@@ -58,8 +58,13 @@
   <!-- ===== drag-to-import overlay ===== -->
   <sc-if value="{{ dragging }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(4,8,12,.8);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;">
-      <div style="border:2px dashed var(--accent,#22d3ee);border-radius:18px;padding:38px 56px;font-family:var(--font-mono);font-size:14px;letter-spacing:.12em;color:var(--accent,#22d3ee);text-transform:uppercase;">松开以导入账号</div>
+      <div style="border:2px dashed var(--accent,#22d3ee);border-radius:18px;padding:38px 56px;font-family:var(--font-mono);font-size:14px;letter-spacing:.12em;color:var(--accent,#22d3ee);text-transform:uppercase;">{{ t.dropToImport }}</div>
     </div>
+  </sc-if>
+
+  <!-- ===== language toggle（演示模式下隐藏）===== -->
+  <sc-if value="{{ showLangToggle }}" hint-placeholder-val="{{ true }}">
+    <button onClick="{{ onToggleLang }}" aria-label="{{ langSwitchAria }}" style="position:fixed;top:14px;right:14px;z-index:55;height:30px;min-width:40px;padding:0 12px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(8,13,17,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.08em;cursor:pointer;" style-hover="background:rgba(255,255,255,.12);color:var(--accent,#22d3ee);">{{ langToggleLabel }}</button>
   </sc-if>
 
   <!-- ============ VIEW MODE ============ -->
@@ -126,15 +131,15 @@
 
       <sc-if value="{{ showViewChrome }}" hint-placeholder-val="{{ true }}">
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;">
-          <button onClick="{{ onAddAnother }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">+ 新建验证码</button>
+          <button onClick="{{ onAddAnother }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">{{ t.newCode }}</button>
           <span style="color:rgba(234,242,245,.2);font-size:11px;">·</span>
-          <button onClick="{{ onAddToBoard }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">加入看板</button>
+          <button onClick="{{ onAddToBoard }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">{{ t.addToBoard }}</button>
           <span style="color:rgba(234,242,245,.2);font-size:11px;">·</span>
-          <button onClick="{{ onEnterPresent }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">🖥 演示模式</button>
+          <button onClick="{{ onEnterPresent }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 12px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">{{ t.presentMode }}</button>
         </div>
       </sc-if>
       <sc-if value="{{ isPresent }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ onExitPresent }}" style="background:none;border:none;color:rgba(234,242,245,.6);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">✕ 退出演示</button>
+        <button onClick="{{ onExitPresent }}" style="background:none;border:none;color:rgba(234,242,245,.6);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">{{ t.exitPresent }}</button>
       </sc-if>
     </div>
   </sc-if>
@@ -150,16 +155,16 @@
         <div style="position:absolute;bottom:14px;right:14px;width:16px;height:16px;border-bottom:2px solid var(--accent,#22d3ee);border-right:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:rgba(234,242,245,.55);">新建验证码</div>
-          <button onClick="{{ onGoBoard }}" style="height:32px;padding:0 14px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);color:var(--accent,#22d3ee);">▦ 多账号看板</button>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:rgba(234,242,245,.55);">{{ t.newCodeTitle }}</div>
+          <button onClick="{{ onGoBoard }}" style="height:32px;padding:0 14px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);color:var(--accent,#22d3ee);">{{ t.boardNav }}</button>
         </div>
 
         <label style="display:flex;flex-direction:column;gap:9px;">
           <span style="display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">
-            <span>密钥 / SECRET</span>
-            <button onClick="{{ onScanImport }}" style="border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;padding:4px 12px;cursor:pointer;text-transform:uppercase;" style-hover="background:rgba(255,255,255,.1);">⃞ 扫码导入</button>
+            <span>{{ t.secretLabel }}</span>
+            <button onClick="{{ onScanImport }}" style="border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;padding:4px 12px;cursor:pointer;text-transform:uppercase;" style-hover="background:rgba(255,255,255,.1);">{{ t.scanImport }}</button>
           </span>
-          <textarea onChange="{{ onInput }}" value="{{ inputValue }}" rows="2" placeholder="粘贴 2FA 密钥，或 otpauth:// 链接" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:14px;line-height:1.6;resize:none;padding:13px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
+          <textarea onChange="{{ onInput }}" value="{{ inputValue }}" rows="2" placeholder="{{ t.secretPlaceholder }}" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:14px;line-height:1.6;resize:none;padding:13px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
         </label>
 
         <sc-if value="{{ error }}" hint-placeholder-val="">
@@ -170,14 +175,14 @@
         </sc-if>
 
         <label style="display:flex;flex-direction:column;gap:9px;">
-          <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">账号名称 / LABEL</span>
-          <input onChange="{{ onLabel }}" value="{{ inputLabel }}" placeholder="例如 GitHub" spellcheck="false" style="width:100%;font-family:var(--font-sans);font-size:14px;padding:12px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);">
+          <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">{{ t.labelLabel }}</span>
+          <input onChange="{{ onLabel }}" value="{{ inputLabel }}" placeholder="{{ t.labelPlaceholder }}" spellcheck="false" style="width:100%;font-family:var(--font-sans);font-size:14px;padding:12px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);">
         </label>
 
         <sc-if value="{{ hasParsed }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;flex-direction:column;gap:18px;border-top:1px solid rgba(255,255,255,.1);padding-top:22px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
-              <div onClick="{{ onCopyCode }}" onKeyDown="{{ onCopyKey }}" role="button" tabindex="0" aria-label="{{ copyAria }}" title="点击复制" style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;">
+              <div onClick="{{ onCopyCode }}" onKeyDown="{{ onCopyKey }}" role="button" tabindex="0" aria-label="{{ copyAria }}" title="{{ copyAria }}" style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;">
                 <sc-for list="{{ leftDigits }}" as="d" hint-placeholder-count="3">
                   <div style="width:38px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,transparent);font-family:var(--font-mono);font-size:30px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
                 </sc-for>
@@ -205,11 +210,11 @@
             </sc-if>
 
             <div style="display:flex;flex-direction:column;gap:12px;">
-              <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">专属链接 / BOOKMARK</span>
+              <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">{{ t.bookmark }}</span>
               <div style="font-family:var(--font-mono);font-size:12px;line-height:1.7;color:rgba(234,242,245,.7);word-break:break-all;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:13px 15px;border-radius:10px;">{{ url }}</div>
               <div style="display:flex;gap:10px;">
                 <button onClick="{{ onCopyUrl }}" style="flex:1;height:46px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 0 22px -10px var(--accent,#22d3ee);" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ urlCopyLabel }}</button>
-                <button onClick="{{ onOpenUrl }}" style="height:46px;padding:0 22px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">打开</button>
+                <button onClick="{{ onOpenUrl }}" style="height:46px;padding:0 22px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.open }}</button>
               </div>
             </div>
 
@@ -217,15 +222,15 @@
               <button onClick="{{ onTogglePresent }}" style="align-self:flex-start;height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);color:var(--accent,#22d3ee);">{{ presentToggleLabel }}</button>
               <sc-if value="{{ presentPanel }}" hint-placeholder-val="{{ false }}">
                 <div style="display:flex;flex-direction:column;gap:11px;">
-                  <div style="font-family:var(--font-sans);font-size:12px;line-height:1.7;color:rgba(234,242,245,.68);">打开后只显示放大的验证码、隐藏二维码——适合投屏 / 录屏 / 当面给人读，避免把密钥二维码暴露在屏幕上。</div>
+                  <div style="font-family:var(--font-sans);font-size:12px;line-height:1.7;color:rgba(234,242,245,.68);">{{ t.presentDesc }}</div>
                   <div style="display:flex;align-items:flex-start;gap:8px;font-family:var(--font-sans);font-size:12px;line-height:1.6;color:#fbbf24;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:11px 13px;">
-                    <span style="flex:none;">⚠️</span><span>它只防<b>你这边屏幕</b>暴露。链接本身仍含密钥，发给别人 = 对方拿到密钥——请走可信渠道，用后及时轮换。</span>
+                    <span style="flex:none;">⚠️</span><span>{{ t.presentWarnPrefix }}<b>{{ t.presentWarnBold }}</b>{{ t.presentWarnSuffix }}</span>
                   </div>
                   <button onClick="{{ onToggleNolabel }}" style="align-self:flex-start;background:none;border:none;color:rgba(234,242,245,.6);font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;padding:2px 0;" style-hover="color:var(--accent,#22d3ee);">{{ nolabelLabel }}</button>
                   <div style="font-family:var(--font-mono);font-size:12px;line-height:1.7;color:rgba(234,242,245,.7);word-break:break-all;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:13px 15px;border-radius:10px;">{{ presentUrl }}</div>
                   <div style="display:flex;gap:10px;">
                     <button onClick="{{ onCopyPresentUrl }}" style="flex:1;height:46px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ presentCopyLabel }}</button>
-                    <button onClick="{{ onOpenPresentUrl }}" style="height:46px;padding:0 22px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">打开</button>
+                    <button onClick="{{ onOpenPresentUrl }}" style="height:46px;padding:0 22px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.open }}</button>
                   </div>
                 </div>
               </sc-if>
@@ -242,14 +247,14 @@
 
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div style="display:flex;flex-direction:column;gap:5px;">
-          <div style="font-family:var(--font-mono);font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent,#22d3ee);">▦ 多号看板</div>
+          <div style="font-family:var(--font-mono);font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent,#22d3ee);">{{ t.boardTitle }}</div>
           <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:rgba(234,242,245,.5);">{{ boardCount }}</div>
         </div>
         <div style="display:flex;gap:9px;flex-wrap:wrap;">
-          <button onClick="{{ onToggleImport }}" style="height:38px;padding:0 16px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">＋ 导入</button>
-          <button onClick="{{ onExport }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">导出</button>
+          <button onClick="{{ onToggleImport }}" style="height:38px;padding:0 16px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ t.boardImport }}</button>
+          <button onClick="{{ onExport }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.boardExport }}</button>
           <button onClick="{{ onClearBoard }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:rgba(234,242,245,.7);font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(251,113,133,.14);border-color:rgba(251,113,133,.4);color:#fb7185;">{{ clearLabel }}</button>
-          <button onClick="{{ onGoSetup }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">单条</button>
+          <button onClick="{{ onGoSetup }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.boardSingle }}</button>
         </div>
       </div>
 
@@ -259,43 +264,43 @@
 
       <sc-if value="{{ importOpen }}" hint-placeholder-val="{{ false }}">
         <div style="border-radius:14px;padding:18px;background:linear-gradient(180deg,rgba(18,28,34,.62),rgba(8,13,17,.62));border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:13px;">
-          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent,#22d3ee);">导入账号</div>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent,#22d3ee);">{{ t.importTitle }}</div>
           <div style="display:flex;gap:9px;flex-wrap:wrap;">
-            <button onClick="{{ onPickFile }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">选择文件 .txt/.md/.yaml</button>
-            <button onClick="{{ onReadClipboard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">读取剪贴板</button>
-            <button onClick="{{ onScanBoard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">扫码 (含 GA 迁移码)</button>
+            <button onClick="{{ onPickFile }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.pickFile }}</button>
+            <button onClick="{{ onReadClipboard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.readClipboard }}</button>
+            <button onClick="{{ onScanBoard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.scanGA }}</button>
           </div>
-          <textarea onChange="{{ onPasteImport }}" value="{{ pasteValue }}" rows="3" placeholder="或在此粘贴多个链接，每行一个（otpauth:// 或本工具的书签链接）" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:12px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
-          <button onClick="{{ onCommitPaste }}" style="align-self:flex-start;height:40px;padding:0 20px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">解析并导入</button>
-          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.6);line-height:1.7;">也可把文件直接拖到页面任意位置。本地仅作缓存，清空无妨——重新导入即恢复。</div>
+          <textarea onChange="{{ onPasteImport }}" value="{{ pasteValue }}" rows="3" placeholder="{{ t.pastePlaceholder }}" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:12px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
+          <button onClick="{{ onCommitPaste }}" style="align-self:flex-start;height:40px;padding:0 20px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ t.parseImport }}</button>
+          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.6);line-height:1.7;">{{ t.importHint }}</div>
         </div>
       </sc-if>
 
       <sc-if value="{{ exportOpen }}" hint-placeholder-val="{{ false }}">
         <div style="border-radius:14px;padding:18px;background:linear-gradient(180deg,rgba(18,28,34,.62),rgba(8,13,17,.62));border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:13px;">
-          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent,#22d3ee);">导出账号</div>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent,#22d3ee);">{{ t.exportTitle }}</div>
           <textarea readonly rows="3" value="{{ exportText }}" spellcheck="false" style="width:100%;font-family:var(--font-mono);font-size:11px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);color:rgba(234,242,245,.75);outline:none;word-break:break-all;"></textarea>
           <div style="display:flex;gap:9px;flex-wrap:wrap;">
             <button onClick="{{ onCopyLinks }}" style="height:40px;padding:0 18px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ linksCopyLabel }}</button>
-            <button onClick="{{ onDownloadLinks }}" style="height:40px;padding:0 18px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">下载 .txt</button>
+            <button onClick="{{ onDownloadLinks }}" style="height:40px;padding:0 18px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.downloadTxt }}</button>
             <button onClick="{{ onCopyBoardUrl }}" style="height:40px;padding:0 18px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ boardUrlCopyLabel }}</button>
           </div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.6);line-height:1.7;">「复制全部链接」可粘回你的 txt；「看板链接」把整组编码进一个书签，换设备打开即恢复——注意它包含全部密钥，请妥善保存。</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.6);line-height:1.7;">{{ t.exportHint }}</div>
         </div>
       </sc-if>
 
       <sc-if value="{{ boardEmpty }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ onToggleImport }}" style="cursor:pointer;border:1px dashed color-mix(in srgb,var(--accent,#22d3ee) 35%,transparent);border-radius:16px;padding:52px 24px;text-align:center;display:flex;flex-direction:column;gap:11px;align-items:center;background:rgba(255,255,255,.015);" style-hover="border-color:var(--accent,#22d3ee);background:color-mix(in srgb,var(--accent,#22d3ee) 6%,transparent);">
           <div style="font-size:34px;color:var(--accent,#22d3ee);">▦</div>
-          <div style="font-family:var(--font-sans);font-size:15px;color:#eaf2f5;">把账号链接文件拖到这里</div>
-          <div style="font-family:var(--font-mono);font-size:11px;color:rgba(234,242,245,.5);line-height:1.8;">支持 .txt / .md / .yaml（每行一个链接）<br>或点此粘贴链接 / 扫 Google Authenticator 迁移码</div>
+          <div style="font-family:var(--font-sans);font-size:15px;color:#eaf2f5;">{{ t.emptyDrop }}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:rgba(234,242,245,.5);line-height:1.8;">{{ t.emptyHint1 }}<br>{{ t.emptyHint2 }}</div>
         </div>
       </sc-if>
 
       <sc-if value="{{ hasAccounts }}" hint-placeholder-val="{{ true }}">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:14px;">
           <sc-for list="{{ boardCards }}" as="card" hint-placeholder-count="6">
-            <div onClick="{{ card.onCopy }}" onKeyDown="{{ card.onKey }}" role="button" tabindex="0" aria-label="{{ card.copyAria }}" title="点击复制验证码" style="--c:{{ card.color }};position:relative;cursor:pointer;border-radius:14px;padding:15px 16px 13px;background:linear-gradient(180deg,rgba(18,28,34,.6),rgba(8,13,17,.6));border:1px solid color-mix(in srgb,var(--c) 26%,transparent);box-shadow:0 0 26px -16px var(--c);overflow:hidden;display:flex;flex-direction:column;gap:11px;" style-hover="border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 0 32px -10px var(--c);">
+            <div onClick="{{ card.onCopy }}" onKeyDown="{{ card.onKey }}" role="button" tabindex="0" aria-label="{{ card.copyAria }}" title="{{ card.copyAria }}" style="--c:{{ card.color }};position:relative;cursor:pointer;border-radius:14px;padding:15px 16px 13px;background:linear-gradient(180deg,rgba(18,28,34,.6),rgba(8,13,17,.6));border:1px solid color-mix(in srgb,var(--c) 26%,transparent);box-shadow:0 0 26px -16px var(--c);overflow:hidden;display:flex;flex-direction:column;gap:11px;" style-hover="border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 0 32px -10px var(--c);">
               <div style="display:flex;align-items:center;gap:10px;min-width:0;">
                 <div style="flex:none;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:14px;font-weight:700;color:#04060a;background:var(--c);box-shadow:0 0 14px -4px var(--c);">{{ card.initial }}</div>
                 <div style="min-width:0;display:flex;flex-direction:column;gap:1px;flex:1;">
@@ -321,11 +326,94 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:600,&quot;height&quot;:760},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#22d3ee&quot;,&quot;#34d399&quot;,&quot;#a78bfa&quot;,&quot;#8fb0c4&quot;,&quot;#fb7185&quot;],&quot;default&quot;:&quot;#22d3ee&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;progressStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ring&quot;,&quot;bar&quot;],&quot;default&quot;:&quot;ring&quot;,&quot;tsType&quot;:&quot;'ring'|'bar'&quot;}}">
+// ==================== i18n 文案字典（无构建：纯对象 + 路径绑定） ====================
+const STR = {
+  zh: {
+    langToggle: 'EN', langSwitchAria: 'Switch to English',
+    live: 'LIVE', open: '打开', copied: '已复制 ✓',
+    dropToImport: '松开以导入账号',
+    code: '验证码',
+    copyCode: '复制验证码', showQr: '显示二维码 ⃞', hideQr: '隐藏二维码',
+    newCode: '+ 新建验证码', addToBoard: '加入看板', presentMode: '🖥 演示模式', exitPresent: '✕ 退出演示',
+    newCodeTitle: '新建验证码', boardNav: '▦ 多账号看板',
+    secretLabel: '密钥 / SECRET', scanImport: '⃞ 扫码导入', secretPlaceholder: '粘贴 2FA 密钥，或 otpauth:// 链接',
+    labelLabel: '账号名称 / LABEL', labelPlaceholder: '例如 GitHub',
+    bookmark: '专属链接 / BOOKMARK', copyLink: '复制链接',
+    presentLinkShow: '🖥 演示模式链接', presentLinkHide: '🖥 隐藏演示链接',
+    presentDesc: '打开后只显示放大的验证码、隐藏二维码——适合投屏 / 录屏 / 当面给人读，避免把密钥二维码暴露在屏幕上。',
+    presentWarnPrefix: '它只防', presentWarnBold: '你这边屏幕', presentWarnSuffix: '暴露。链接本身仍含密钥，发给别人 = 对方拿到密钥——请走可信渠道，用后及时轮换。',
+    nolabelOff: '☐ 连账号名也隐藏', nolabelOn: '☑ 连账号名也隐藏', copyPresentLink: '复制演示链接',
+    boardTitle: '▦ 多号看板', boardImport: '＋ 导入', boardExport: '导出', boardClear: '清空', boardClearConfirm: '再点一次确认清空', boardSingle: '单条',
+    importTitle: '导入账号', pickFile: '选择文件 .txt/.md/.yaml', readClipboard: '读取剪贴板', scanGA: '扫码 (含 GA 迁移码)',
+    pastePlaceholder: '或在此粘贴多个链接，每行一个（otpauth:// 或本工具的书签链接）', parseImport: '解析并导入',
+    importHint: '也可把文件直接拖到页面任意位置。本地仅作缓存，清空无妨——重新导入即恢复。',
+    exportTitle: '导出账号', copyAllLinks: '复制全部链接', downloadTxt: '下载 .txt', copyBoardLink: '复制看板链接',
+    exportHint: '「复制全部链接」可粘回你的 txt；「看板链接」把整组编码进一个书签，换设备打开即恢复——注意它包含全部密钥，请妥善保存。',
+    emptyDrop: '把账号链接文件拖到这里', emptyHint1: '支持 .txt / .md / .yaml（每行一个链接）', emptyHint2: '或点此粘贴链接 / 扫 Google Authenticator 迁移码',
+    boardNone: '还没有账号', accountFallback: (i) => '账号 ' + i,
+    accountsCount: (n) => n + ' 个账号', copyCodeOf: (l) => '复制 ' + l + ' 的验证码',
+    imported: (n) => '已导入 ' + n + ' 个账号 ✓', importCap: (n) => '已达上限 ' + n + ' 个账号，多余的已忽略',
+    alreadyInBoard: '这些账号已在看板中', noLinksFound: '未识别到账号链接', noLinksInFile: '文件中未识别到账号链接', noLinksDrop: '未在拖入内容中识别到账号链接',
+    boardLinkBad: '看板链接无法解析（可能被截断或损坏）', cleared: '已清空（重新导入即可恢复）',
+    fileTooBig: '文件过大（>2MB），请确认是账号链接列表', fileSkipBig: '跳过过大文件（>2MB）', readFileFail: '读取文件失败', readFail: '读取失败', downloadFail: '下载失败',
+    clipboardNo: '此浏览器不支持读取剪贴板，请手动粘贴', clipboardFail: '读取剪贴板失败（可能需要授权）', clipboardNoLinks: '剪贴板中未识别到账号链接',
+    scanNo: '此浏览器不支持扫码，请粘贴链接导入', scanNoAccount: '二维码中未识别到账号', scanNoSupport: '此浏览器不支持扫码，请直接粘贴 otpauth:// 链接',
+    qrImported: '已从二维码导入 ✓', qrNotFound: '未识别到二维码', qrFail: '二维码解析失败', qrUnavailable: '二维码不可用', qrGenFail: '二维码生成失败',
+    errInvalid: '密钥无效：只能含 A–Z 和 2–7（base32）', errHotp: '暂不支持 HOTP（基于计数器）链接，本工具只算 TOTP', errNoSecret: 'otpauth 链接里没有有效的 secret', errBookmarkBad: '链接里的密钥无效或被截断，请检查后重新粘贴',
+    titleApp: '2FA', titleBoard: '多号看板 · 2FA', titleSuffix: ' · 2FA',
+  },
+  en: {
+    langToggle: '中', langSwitchAria: '切换到中文',
+    live: 'LIVE', open: 'Open', copied: 'Copied ✓',
+    dropToImport: 'Drop to import accounts',
+    code: 'Code',
+    copyCode: 'Copy code', showQr: 'Show QR ⃞', hideQr: 'Hide QR',
+    newCode: '+ New code', addToBoard: 'Add to board', presentMode: '🖥 Presentation', exitPresent: '✕ Exit',
+    newCodeTitle: 'New code', boardNav: '▦ Multi-account board',
+    secretLabel: 'SECRET', scanImport: '⃞ Scan QR', secretPlaceholder: 'Paste a 2FA secret, or an otpauth:// link',
+    labelLabel: 'LABEL', labelPlaceholder: 'e.g. GitHub',
+    bookmark: 'BOOKMARK LINK', copyLink: 'Copy link',
+    presentLinkShow: '🖥 Presentation link', presentLinkHide: '🖥 Hide presentation link',
+    presentDesc: 'Opens to just the enlarged code with the QR hidden — for projecting / screen-recording / reading aloud, so the secret QR never appears on screen.',
+    presentWarnPrefix: 'It only guards ', presentWarnBold: 'your own screen', presentWarnSuffix: '. The link still contains the secret — sending it = handing over the secret. Use a trusted channel and rotate after.',
+    nolabelOff: '☐ Also hide the account name', nolabelOn: '☑ Also hide the account name', copyPresentLink: 'Copy presentation link',
+    boardTitle: '▦ Board', boardImport: '＋ Import', boardExport: 'Export', boardClear: 'Clear', boardClearConfirm: 'Click again to confirm', boardSingle: 'Single',
+    importTitle: 'Import accounts', pickFile: 'Choose file .txt/.md/.yaml', readClipboard: 'Read clipboard', scanGA: 'Scan QR (incl. GA export)',
+    pastePlaceholder: 'Or paste multiple links here, one per line (otpauth:// or this tool’s bookmark links)', parseImport: 'Parse & import',
+    importHint: 'You can also drop a file anywhere on the page. Local cache only — clearing is fine, just re-import to restore.',
+    exportTitle: 'Export accounts', copyAllLinks: 'Copy all links', downloadTxt: 'Download .txt', copyBoardLink: 'Copy board link',
+    exportHint: '“Copy all links” pastes back into your txt; “board link” encodes the whole set into one bookmark that restores on any device — note it contains every secret, keep it safe.',
+    emptyDrop: 'Drop your account-links file here', emptyHint1: 'Supports .txt / .md / .yaml (one link per line)', emptyHint2: 'or click to paste links / scan a Google Authenticator export',
+    boardNone: 'No accounts yet', accountFallback: (i) => 'Account ' + i,
+    accountsCount: (n) => n + (n === 1 ? ' account' : ' accounts'), copyCodeOf: (l) => 'Copy code for ' + l,
+    imported: (n) => 'Imported ' + n + (n === 1 ? ' account ✓' : ' accounts ✓'), importCap: (n) => 'Reached the ' + n + '-account limit, extras ignored',
+    alreadyInBoard: 'These accounts are already on the board', noLinksFound: 'No account links found', noLinksInFile: 'No account links found in the file', noLinksDrop: 'No account links found in what you dropped',
+    boardLinkBad: 'Board link could not be parsed (truncated or corrupted?)', cleared: 'Cleared (re-import to restore)',
+    fileTooBig: 'File too large (>2MB) — is it a list of account links?', fileSkipBig: 'Skipped an oversized file (>2MB)', readFileFail: 'Failed to read the file', readFail: 'Read failed', downloadFail: 'Download failed',
+    clipboardNo: 'This browser can’t read the clipboard — paste manually', clipboardFail: 'Clipboard read failed (permission needed?)', clipboardNoLinks: 'No account links in the clipboard',
+    scanNo: 'This browser can’t scan QR — paste a link to import', scanNoAccount: 'No account found in the QR', scanNoSupport: 'This browser can’t scan QR — paste the otpauth:// link directly',
+    qrImported: 'Imported from QR ✓', qrNotFound: 'No QR detected', qrFail: 'Failed to parse the QR', qrUnavailable: 'QR unavailable', qrGenFail: 'Failed to generate the QR',
+    errInvalid: 'Invalid secret: only A–Z and 2–7 (base32) allowed', errHotp: 'HOTP (counter-based) links aren’t supported — this tool only does TOTP', errNoSecret: 'No valid secret in the otpauth link', errBookmarkBad: 'The secret in the link is invalid or truncated — check and paste again',
+    titleApp: '2FA', titleBoard: 'Board · 2FA', titleSuffix: ' · 2FA',
+  },
+};
+// 初始语言：?lang= 覆盖 → localStorage → 浏览器语言（中文系→zh，否则 en）
+function initialLang() {
+  try {
+    const u = new URLSearchParams(location.search).get('lang');
+    if (u === 'en' || u === 'zh') return u;
+    const s = localStorage.getItem('easy2fa.lang');
+    if (s === 'en' || s === 'zh') return s;
+  } catch (e) {}
+  return (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+
 class Component extends DCLogic {
   rootRef = React.createRef();
   ACCENTS = ['#22d3ee', '#34d399', '#a78bfa', '#fb7185', '#fbbf24', '#60a5fa', '#f472b6', '#4ade80', '#facc15', '#38bdf8'];
   _boardCounters = [];
   state = {
+    lang: initialLang(),
     mode: 'setup',
     secret: '', label: '', issuer: '', digits: 6, period: 30, algorithm: 'SHA-1',
     code: '', secondsLeft: 30, copied: false,
@@ -341,7 +429,23 @@ class Component extends DCLogic {
     presentPanel: false, presentNolabel: false, presentUrlCopied: false,
   };
 
+  // —— i18n ——
+  t() { return STR[this.state.lang] || STR.zh; }
+  toggleLang() {
+    const lang = this.state.lang === 'zh' ? 'en' : 'zh';
+    try { localStorage.setItem('easy2fa.lang', lang); } catch (e) {}
+    try { document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'; } catch (e) {}
+    this.setState({ lang }, () => this.syncTitle());
+  }
+  syncTitle() {
+    const t = this.t(), s = this.state;
+    document.title = s.mode === 'view'
+      ? (((s.nolabel ? '' : (s.label || s.issuer)) || t.code) + t.titleSuffix)
+      : (s.mode === 'board' ? t.titleBoard : t.titleApp);
+  }
+
   componentDidMount() {
+    try { document.documentElement.lang = this.state.lang === 'zh' ? 'zh-CN' : 'en'; } catch (e) {}
     this.applyAccent();
     this._tick = setInterval(() => this.tick(), 250);
     this._onHash = () => this.loadFromHash();
@@ -412,24 +516,24 @@ class Component extends DCLogic {
       const nolabel = params.get('nolabel') === '1';
       this._lastCounter = null;
       this.setState({ mode: 'view', secret, label, issuer, digits, period, algorithm, present, nolabel, code: '', copied: false, shownDigits: null, animating: false, showQr: false }, () => this.refresh());
-      document.title = ((nolabel ? '' : (label || issuer)) || '验证码') + ' · 2FA';
+      document.title = ((nolabel ? '' : (label || issuer)) || this.t().code) + this.t().titleSuffix;
     } else if (boardParam) {
       const accts = this.decodeBoardParam(boardParam).map((a) => this.normalizeAccount(a));
       if (accts.length) {
         this._boardCounters = [];
         this.saveBoard(accts);
         this.setState({ mode: 'board', accounts: accts, boardLive: accts.map((a) => ({ code: '', codeFmt: '', sec: a.period, frac: 1 })), importOpen: false, exportOpen: false, boardMsg: '' }, () => this.refreshBoardAll());
-        document.title = '多号看板 · 2FA';
+        document.title = this.t().titleBoard;
       } else {
         this.enterBoardOrSetup();
-        this.setState({ boardMsg: '看板链接无法解析（可能被截断或损坏）' });
+        this.setState({ boardMsg: this.t().boardLinkBad });
       }
     } else if (secret) {
       // #secret= 存在但 base32 解不出（被聊天工具截断/污染）——回 setup、预填、明确报错，
       // 而不是静默掉到空表单或无关的缓存看板（这是原来最让人困惑的死路）。
       this._lastPrevCounter = null;
-      this.setState({ mode: 'setup', inputValue: secret, inputLabel: params.get('label') || '', parsed: null, previewCode: '', shownDigits: null, error: '链接里的密钥无效或被截断，请检查后重新粘贴' });
-      document.title = '2FA';
+      this.setState({ mode: 'setup', inputValue: secret, inputLabel: params.get('label') || '', parsed: null, previewCode: '', shownDigits: null, error: this.t().errBookmarkBad });
+      document.title = this.t().titleApp;
     } else {
       this.enterBoardOrSetup();
     }
@@ -440,10 +544,10 @@ class Component extends DCLogic {
     if (cached.length) {
       this._boardCounters = [];
       this.setState({ mode: 'board', accounts: cached, boardLive: cached.map((a) => ({ code: '', codeFmt: '', sec: a.period, frac: 1 })), importOpen: false, exportOpen: false }, () => this.refreshBoardAll());
-      document.title = '多号看板 · 2FA';
+      document.title = this.t().titleBoard;
     } else {
       this.setState({ mode: 'setup' });
-      document.title = '2FA';
+      document.title = this.t().titleApp;
     }
   }
 
@@ -586,8 +690,8 @@ class Component extends DCLogic {
     let error = '';
     if (v.trim() && !ok) {
       error = (parsed && parsed.reason === 'hotp')
-        ? '暂不支持 HOTP（基于计数器）链接，本工具只算 TOTP'
-        : (/^otpauth:\/\//i.test(v.trim()) ? 'otpauth 链接里没有有效的 secret' : '密钥无效：只能含 A–Z 和 2–7（base32）');
+        ? this.t().errHotp
+        : (/^otpauth:\/\//i.test(v.trim()) ? this.t().errNoSecret : this.t().errInvalid);
     }
     this.setState({
       parsed: ok ? parsed : null,
@@ -603,7 +707,7 @@ class Component extends DCLogic {
   // ---------- QR 扫码导入 ----------
   async scanImport() {
     if (!('BarcodeDetector' in window)) {
-      this.setState({ importMsg: '此浏览器不支持扫码，请直接粘贴 otpauth:// 链接' });
+      this.setState({ importMsg: this.t().scanNoSupport });
       return;
     }
     const inp = document.createElement('input');
@@ -616,10 +720,10 @@ class Component extends DCLogic {
         const det = new BarcodeDetector({ formats: ['qr_code'] });
         const codes = await det.detect(bitmap);
         const val = codes && codes[0] && codes[0].rawValue;
-        if (val && /^otpauth:\/\//i.test(val)) { this.onInput(val); this.setState({ importMsg: '已从二维码导入 ✓' }); }
+        if (val && /^otpauth:\/\//i.test(val)) { this.onInput(val); this.setState({ importMsg: this.t().qrImported }); }
         else if (val) { this.onInput(val); }
-        else this.setState({ importMsg: '未识别到二维码' });
-      } catch (e) { this.setState({ importMsg: '二维码解析失败' }); }
+        else this.setState({ importMsg: this.t().qrNotFound });
+      } catch (e) { this.setState({ importMsg: this.t().qrFail }); }
     };
     inp.click();
   }
@@ -643,11 +747,11 @@ class Component extends DCLogic {
       ? { secret: s.secret, label: s.label, issuer: s.issuer, digits: s.digits, period: s.period, algorithm: s.algorithm }
       : s.parsed;
     const url = this.buildOtpauthUrl(a);
-    if (!url || typeof qrcode === 'undefined') { this.setState({ importMsg: '二维码不可用' }); return; }
+    if (!url || typeof qrcode === 'undefined') { this.setState({ importMsg: this.t().qrUnavailable }); return; }
     try {
       const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
       this.setState({ showQr: true, qrDataUrl: qr.createDataURL(5, 2) });
-    } catch (e) { this.setState({ importMsg: '二维码生成失败' }); }
+    } catch (e) { this.setState({ importMsg: this.t().qrGenFail }); }
   }
 
   buildUrl() {
@@ -703,14 +807,14 @@ class Component extends DCLogic {
     this._animCode = null;
     try { history.replaceState(null, '2FA', location.pathname + location.search); } catch (e) {}
     this.setState({ mode: 'setup', secret: '', inputValue: '', inputLabel: '', parsed: null, previewCode: '', error: '', shownDigits: null, animating: false, showQr: false, importMsg: '' });
-    document.title = '2FA';
+    document.title = this.t().titleApp;
   }
 
   goSetup() {
     this._animCode = null;
     try { history.replaceState(null, '2FA', location.pathname + location.search); } catch (e) {}
     this.setState({ mode: 'setup', importOpen: false, exportOpen: false });
-    document.title = '2FA';
+    document.title = this.t().titleApp;
   }
 
   goBoard() {
@@ -718,7 +822,7 @@ class Component extends DCLogic {
     if (!accts || !accts.length) accts = this.loadBoard();
     this._boardCounters = [];
     this.setState({ mode: 'board', accounts: accts, boardLive: accts.map((a) => ({ code: '', codeFmt: '', sec: a.period, frac: 1 })), importOpen: accts.length === 0, exportOpen: false, boardMsg: '' }, () => this.refreshBoardAll());
-    document.title = '多号看板 · 2FA';
+    document.title = this.t().titleBoard;
     try { history.replaceState(null, document.title, location.pathname + location.search); } catch (e) {}
   }
 
@@ -764,7 +868,7 @@ class Component extends DCLogic {
   clearBoard() {
     try { localStorage.removeItem('easy2fa.board'); } catch (e) {}
     this._boardCounters = [];
-    this.setState({ accounts: [], boardLive: [], importOpen: false, exportOpen: false, boardMsg: '已清空（重新导入即可恢复）' });
+    this.setState({ accounts: [], boardLive: [], importOpen: false, exportOpen: false, boardMsg: this.t().cleared });
   }
 
   addAccounts(list) {
@@ -786,9 +890,9 @@ class Component extends DCLogic {
     this.setState({
       mode: 'board', accounts: existing, boardLive: live,
       importOpen: false, exportOpen: false, pasteValue: '',
-      boardMsg: truncated ? ('已达上限 ' + MAX + ' 个账号，多余的已忽略') : (added ? ('已导入 ' + added + ' 个账号 ✓') : '这些账号已在看板中'),
+      boardMsg: truncated ? this.t().importCap(MAX) : (added ? this.t().imported(added) : this.t().alreadyInBoard),
     }, () => this.refreshBoardAll());
-    document.title = '多号看板 · 2FA';
+    document.title = this.t().titleBoard;
   }
 
   // —— 解析：从任意文本里抠出账号链接（格式无关）——
@@ -993,14 +1097,14 @@ class Component extends DCLogic {
       const files = dt.files ? Array.from(dt.files) : [];
       for (const f of files) {
         if (f.type && f.type.startsWith('image/')) { const accts = await this.scanFile(f); if (accts.length) { this.addAccounts(accts); return; } }
-        else if (f.size > 2 * 1024 * 1024) { this.setState({ boardMsg: '跳过过大文件（>2MB）' }); }
+        else if (f.size > 2 * 1024 * 1024) { this.setState({ boardMsg: this.t().fileSkipBig }); }
         else { try { text += '\n' + await f.text(); } catch (_) {} }
       }
       if (!text && dt.getData) text = dt.getData('text') || '';
       const accts = this.parseAccountsFromText(text);
       if (accts.length) this.addAccounts(accts);
-      else { this.goBoard(); this.setState({ boardMsg: '未在拖入内容中识别到账号链接' }); }
-    } catch (e) { this.setState({ boardMsg: '读取失败' }); }
+      else { this.goBoard(); this.setState({ boardMsg: this.t().noLinksDrop }); }
+    } catch (e) { this.setState({ boardMsg: this.t().readFail }); }
   }
   async scanFile(file) {
     if (!('BarcodeDetector' in window)) return [];
@@ -1016,13 +1120,13 @@ class Component extends DCLogic {
     } catch (e) { return []; }
   }
   scanImportBoard() {
-    if (!('BarcodeDetector' in window)) { this.setState({ boardMsg: '此浏览器不支持扫码，请粘贴链接导入' }); return; }
+    if (!('BarcodeDetector' in window)) { this.setState({ boardMsg: this.t().scanNo }); return; }
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
     inp.onchange = async () => {
       const file = inp.files && inp.files[0]; if (!file) return;
       const accts = await this.scanFile(file);
       if (accts.length) this.addAccounts(accts);
-      else this.setState({ boardMsg: '二维码中未识别到账号' });
+      else this.setState({ boardMsg: this.t().scanNoAccount });
     };
     inp.click();
   }
@@ -1030,16 +1134,16 @@ class Component extends DCLogic {
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.txt,.md,.markdown,.yaml,.yml,.csv,.json,text/*';
     inp.onchange = async () => {
       const file = inp.files && inp.files[0]; if (!file) return;
-      if (file.size > 2 * 1024 * 1024) { this.setState({ boardMsg: '文件过大（>2MB），请确认是账号链接列表' }); return; }
-      try { const text = await file.text(); const accts = this.parseAccountsFromText(text); if (accts.length) this.addAccounts(accts); else this.setState({ boardMsg: '文件中未识别到账号链接' }); }
-      catch (e) { this.setState({ boardMsg: '读取文件失败' }); }
+      if (file.size > 2 * 1024 * 1024) { this.setState({ boardMsg: this.t().fileTooBig }); return; }
+      try { const text = await file.text(); const accts = this.parseAccountsFromText(text); if (accts.length) this.addAccounts(accts); else this.setState({ boardMsg: this.t().noLinksInFile }); }
+      catch (e) { this.setState({ boardMsg: this.t().readFileFail }); }
     };
     inp.click();
   }
   commitPasteImport() {
     const accts = this.parseAccountsFromText(this.state.pasteValue || '');
     if (accts.length) this.addAccounts(accts);
-    else this.setState({ boardMsg: '未识别到账号链接' });
+    else this.setState({ boardMsg: this.t().noLinksFound });
   }
   async readClipboardImport() {
     try {
@@ -1047,9 +1151,9 @@ class Component extends DCLogic {
         const t = await navigator.clipboard.readText();
         const accts = this.parseAccountsFromText(t);
         if (accts.length) this.addAccounts(accts);
-        else this.setState({ boardMsg: '剪贴板中未识别到账号链接' });
-      } else this.setState({ boardMsg: '此浏览器不支持读取剪贴板，请手动粘贴' });
-    } catch (e) { this.setState({ boardMsg: '读取剪贴板失败（可能需要授权）' }); }
+        else this.setState({ boardMsg: this.t().clipboardNoLinks });
+      } else this.setState({ boardMsg: this.t().clipboardNo });
+    } catch (e) { this.setState({ boardMsg: this.t().clipboardFail }); }
   }
   downloadText(filename, text) {
     try {
@@ -1059,11 +1163,12 @@ class Component extends DCLogic {
       a.href = url; a.download = filename;
       document.body.appendChild(a); a.click();
       setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch (e) {} }, 0);
-    } catch (e) { this.setState({ boardMsg: '下载失败' }); }
+    } catch (e) { this.setState({ boardMsg: this.t().downloadFail }); }
   }
 
   renderVals() {
     const s = this.state;
+    const t = this.t();
     const progressStyle = this.props.progressStyle ?? 'ring';
     const isView = s.mode === 'view';
     const period = isView ? s.period : (s.parsed ? s.parsed.period : 30);
@@ -1084,7 +1189,7 @@ class Component extends DCLogic {
     const liveArr = s.boardLive || [];
     const boardCards = accts.map((a, i) => {
       const lv = liveArr[i] || {};
-      const labelTxt = a.label || a.issuer || ('账号 ' + (i + 1));
+      const labelTxt = a.label || a.issuer || t.accountFallback(i + 1);
       const frac = (lv.frac != null) ? lv.frac : 1;
       return {
         color: a.color || '#22d3ee',
@@ -1093,10 +1198,10 @@ class Component extends DCLogic {
         sub: (a.issuer && a.label) ? a.issuer : (a.algorithm + ' · ' + a.period + 's'),
         codeFmt: lv.codeFmt ? lv.codeFmt : (lv.code ? this.fmtCode(lv.code) : '· · ·  · · ·'),
         barWidth: (frac * 100).toFixed(1) + '%',
-        foot: (s.copiedIdx === i) ? '已复制 ✓' : ((lv.sec != null ? lv.sec : '–') + 's'),
+        foot: (s.copiedIdx === i) ? t.copied : ((lv.sec != null ? lv.sec : '–') + 's'),
         onCopy: () => this.copyBoardCode(lv.code, i),
         onKey: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.copyBoardCode(lv.code, i); } },
-        copyAria: '复制 ' + labelTxt + ' 的验证码',
+        copyAria: t.copyCodeOf(labelTxt),
       };
     });
 
@@ -1110,20 +1215,24 @@ class Component extends DCLogic {
 
     return {
       rootRef: this.rootRef,
+      t, // 整个当前语言字典，模板用 {{ t.xxx }} 绑定静态文案
+      langToggleLabel: t.langToggle, langSwitchAria: t.langSwitchAria,
+      onToggleLang: () => this.toggleLang(),
+      showLangToggle: !isPresent, // 演示模式下隐藏，保持投屏干净
       isView, isSetup: s.mode === 'setup',
       useRing: progressStyle === 'ring',
       useBar: progressStyle === 'bar',
       leftDigits: chars.slice(0, mid),
       rightDigits: chars.slice(mid),
-      labelName: nolabel ? '' : (s.label || s.issuer || '验证码'),
+      labelName: nolabel ? '' : (s.label || s.issuer || t.code),
       secondsLeft: s.secondsLeft,
       ringR: R, ringC: C, ringOffset: C * (1 - frac),
       ringCsm: Csm, ringOffsetSm: Csm * (1 - frac),
       barWidth: (frac * 100).toFixed(2) + '%',
-      copyLabel: s.copied ? '已复制 ✓' : '复制验证码',
+      copyLabel: s.copied ? t.copied : t.copyCode,
       onCopyCode: () => { if (code && code.length) this.copyText(code, 'copied'); },
       onCopyKey: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (code && code.length) this.copyText(code, 'copied'); } },
-      copyAria: '复制验证码',
+      copyAria: t.copyCode,
       onAddAnother: () => this.addAnother(),
       inputValue: s.inputValue,
       inputLabel: s.inputLabel,
@@ -1133,12 +1242,12 @@ class Component extends DCLogic {
       error: s.error,
       importMsg: s.importMsg,
       url: s.parsed ? this.buildUrl() : '', // 书签链接只在解析成功（书签面板可见）时才拼
-      urlCopyLabel: s.urlCopied ? '已复制 ✓' : '复制链接',
+      urlCopyLabel: s.urlCopied ? t.copied : t.copyLink,
       onCopyUrl: () => { const u = this.buildUrl(); if (u) this.copyText(u, 'urlCopied'); },
       onOpenUrl: () => { const u = this.buildUrl(); if (u) location.href = u; },
       onScanImport: () => this.scanImport(),
       onToggleQr: () => this.toggleQr(),
-      qrLabel: s.showQr ? '隐藏二维码' : '显示二维码 ⃞',
+      qrLabel: s.showQr ? t.hideQr : t.showQr,
       showQr: s.showQr,
       qrDataUrl: s.qrDataUrl,
 
@@ -1148,10 +1257,10 @@ class Component extends DCLogic {
       onEnterPresent: () => this.enterPresent(),
       onExitPresent: () => this.exitPresent(),
       presentPanel: s.presentPanel,
-      presentToggleLabel: s.presentPanel ? '🖥 隐藏演示链接' : '🖥 演示模式链接',
-      nolabelLabel: s.presentNolabel ? '☑ 连账号名也隐藏' : '☐ 连账号名也隐藏',
+      presentToggleLabel: s.presentPanel ? t.presentLinkHide : t.presentLinkShow,
+      nolabelLabel: s.presentNolabel ? t.nolabelOn : t.nolabelOff,
       presentUrl: s.presentPanel ? this.buildPresentUrl() : '', // 演示链接只在演示面板打开时才拼
-      presentCopyLabel: s.presentUrlCopied ? '已复制 ✓' : '复制演示链接',
+      presentCopyLabel: s.presentUrlCopied ? t.copied : t.copyPresentLink,
       onTogglePresent: () => this.setState({ presentPanel: !this.state.presentPanel }),
       onToggleNolabel: () => this.setState({ presentNolabel: !this.state.presentNolabel }),
       onCopyPresentUrl: () => { const u = this.buildPresentUrl(); if (u) this.copyText(u, 'presentUrlCopied'); },
@@ -1159,7 +1268,7 @@ class Component extends DCLogic {
 
       // —— 多号看板 ——
       isBoard: s.mode === 'board',
-      boardCount: accts.length ? (accts.length + ' 个账号') : '还没有账号',
+      boardCount: accts.length ? t.accountsCount(accts.length) : t.boardNone,
       boardEmpty: s.mode === 'board' && accts.length === 0 && !s.importOpen,
       hasAccounts: accts.length > 0,
       boardCards,
@@ -1174,17 +1283,17 @@ class Component extends DCLogic {
       onToggleImport: () => this.setState({ importOpen: !this.state.importOpen, exportOpen: false, boardMsg: '' }),
       onExport: () => this.setState({ exportOpen: !this.state.exportOpen, importOpen: false }),
       onClearBoard: () => this.armOrClear(),
-      clearLabel: s.clearArmed ? '再点一次确认清空' : '清空',
+      clearLabel: s.clearArmed ? t.boardClearConfirm : t.boardClear,
       onPickFile: () => this.pickFile(),
       onScanBoard: () => this.scanImportBoard(),
       onPasteImport: (e) => this.setState({ pasteValue: e.target.value }),
       onCommitPaste: () => this.commitPasteImport(),
       onReadClipboard: () => this.readClipboardImport(),
-      onCopyLinks: () => { const t = this.exportLinks(); if (t) this.copyText(t, 'linksCopied'); },
-      onDownloadLinks: () => { const t = this.exportLinks(); if (t) this.downloadText('easy2fa-accounts.txt', t); },
+      onCopyLinks: () => { const txt = this.exportLinks(); if (txt) this.copyText(txt, 'linksCopied'); },
+      onDownloadLinks: () => { const txt = this.exportLinks(); if (txt) this.downloadText('easy2fa-accounts.txt', txt); },
       onCopyBoardUrl: () => { const u = this.boardUrl(); if (u) this.copyText(u, 'boardUrlCopied'); },
-      linksCopyLabel: s.linksCopied ? '已复制 ✓' : '复制全部链接',
-      boardUrlCopyLabel: s.boardUrlCopied ? '已复制 ✓' : '复制看板链接',
+      linksCopyLabel: s.linksCopied ? t.copied : t.copyAllLinks,
+      boardUrlCopyLabel: s.boardUrlCopied ? t.copied : t.copyBoardLink,
       onAddToBoard: () => { const st = this.state; this.addAccounts([{ secret: st.secret, label: st.label, issuer: st.issuer, digits: st.digits, period: st.period, algorithm: st.algorithm, valid: true }]); },
     };
   }
