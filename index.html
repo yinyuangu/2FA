@@ -36,10 +36,16 @@
     @keyframes sweepX{0%{transform:translateX(-130%);}100%{transform:translateX(130%);}}
     textarea::placeholder,input::placeholder{color:rgba(255,255,255,.3);}
     ::selection{background:color-mix(in srgb,var(--accent,#22d3ee) 40%,transparent);}
+    /* a11y: 键盘焦点环——深色主题默认环几乎看不见。:focus-visible 只在键盘聚焦时显示，不打扰鼠标用户。 */
+    :focus-visible{outline:2px solid var(--accent,#22d3ee);outline-offset:2px;}
+    /* a11y: 尊重"减少动态效果"——关掉所有装饰性无限动画（省电 + 防前庭不适）。倒计时环 stroke 由内联 transition 表达真实状态，不受影响。 */
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;animation-delay:0s !important;}
+    }
   </style>
 </helmet>
 
-<div ref="{{ rootRef }}" style="position:relative;min-height:100vh;width:100%;display:flex;align-items:safe center;justify-content:center;padding:28px;overflow-x:hidden;overflow-y:auto;background:radial-gradient(120% 120% at 50% 0%,#0c151b 0%,#070b0e 55%,#04060800 100%),#06090c;font-family:var(--font-sans);color:#eaf2f5;">
+<div ref="{{ rootRef }}" role="main" style="position:relative;min-height:100vh;width:100%;display:flex;align-items:safe center;justify-content:center;padding:28px;overflow-x:hidden;overflow-y:auto;background:radial-gradient(120% 120% at 50% 0%,#0c151b 0%,#070b0e 55%,#04060800 100%),#06090c;font-family:var(--font-sans);color:#eaf2f5;">
 
   <!-- ===== animated background ===== -->
   <div style="position:absolute;inset:-2px;pointer-events:none;background-image:linear-gradient(to right,color-mix(in srgb,var(--accent,#22d3ee) 11%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--accent,#22d3ee) 11%,transparent) 1px,transparent 1px);background-size:64px 64px;animation:gridPan 9s linear infinite;-webkit-mask-image:radial-gradient(110% 90% at 50% 45%,#000 25%,transparent 78%);mask-image:radial-gradient(110% 90% at 50% 45%,#000 25%,transparent 78%);opacity:.7;"></div>
@@ -127,7 +133,7 @@
         </div>
       </sc-if>
       <sc-if value="{{ isPresent }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ onExitPresent }}" style="background:none;border:none;color:rgba(234,242,245,.35);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">✕ 退出演示</button>
+        <button onClick="{{ onExitPresent }}" style="background:none;border:none;color:rgba(234,242,245,.6);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">✕ 退出演示</button>
       </sc-if>
     </div>
   </sc-if>
@@ -170,7 +176,7 @@
         <sc-if value="{{ hasParsed }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;flex-direction:column;gap:18px;border-top:1px solid rgba(255,255,255,.1);padding-top:22px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
-              <div onClick="{{ onCopyCode }}" title="点击复制" style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;">
+              <div onClick="{{ onCopyCode }}" onKeyDown="{{ onCopyKey }}" role="button" tabindex="0" aria-label="{{ copyAria }}" title="点击复制" style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;">
                 <sc-for list="{{ leftDigits }}" as="d" hint-placeholder-count="3">
                   <div style="width:38px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 28%,transparent);background:color-mix(in srgb,var(--accent,#22d3ee) 7%,transparent);font-family:var(--font-mono);font-size:30px;font-weight:600;color:#fff;animation:codeGlow 3s ease-in-out infinite;">{{ d }}</div>
                 </sc-for>
@@ -260,7 +266,7 @@
           </div>
           <textarea onChange="{{ onPasteImport }}" value="{{ pasteValue }}" rows="3" placeholder="或在此粘贴多个链接，每行一个（otpauth:// 或本工具的书签链接）" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:12px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
           <button onClick="{{ onCommitPaste }}" style="align-self:flex-start;height:40px;padding:0 20px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">解析并导入</button>
-          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.42);line-height:1.7;">也可把文件直接拖到页面任意位置。本地仅作缓存，清空无妨——重新导入即恢复。</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.6);line-height:1.7;">也可把文件直接拖到页面任意位置。本地仅作缓存，清空无妨——重新导入即恢复。</div>
         </div>
       </sc-if>
 
@@ -273,7 +279,7 @@
             <button onClick="{{ onDownloadLinks }}" style="height:40px;padding:0 18px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">下载 .txt</button>
             <button onClick="{{ onCopyBoardUrl }}" style="height:40px;padding:0 18px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ boardUrlCopyLabel }}</button>
           </div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.42);line-height:1.7;">「复制全部链接」可粘回你的 txt；「看板链接」把整组编码进一个书签，换设备打开即恢复——注意它包含全部密钥，请妥善保存。</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.6);line-height:1.7;">「复制全部链接」可粘回你的 txt；「看板链接」把整组编码进一个书签，换设备打开即恢复——注意它包含全部密钥，请妥善保存。</div>
         </div>
       </sc-if>
 
@@ -288,12 +294,12 @@
       <sc-if value="{{ hasAccounts }}" hint-placeholder-val="{{ true }}">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:14px;">
           <sc-for list="{{ boardCards }}" as="card" hint-placeholder-count="6">
-            <div onClick="{{ card.onCopy }}" title="点击复制验证码" style="--c:{{ card.color }};position:relative;cursor:pointer;border-radius:14px;padding:15px 16px 13px;background:linear-gradient(180deg,rgba(18,28,34,.6),rgba(8,13,17,.6));border:1px solid color-mix(in srgb,var(--c) 26%,transparent);box-shadow:0 0 26px -16px var(--c);overflow:hidden;display:flex;flex-direction:column;gap:11px;" style-hover="border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 0 32px -10px var(--c);">
+            <div onClick="{{ card.onCopy }}" onKeyDown="{{ card.onKey }}" role="button" tabindex="0" aria-label="{{ card.copyAria }}" title="点击复制验证码" style="--c:{{ card.color }};position:relative;cursor:pointer;border-radius:14px;padding:15px 16px 13px;background:linear-gradient(180deg,rgba(18,28,34,.6),rgba(8,13,17,.6));border:1px solid color-mix(in srgb,var(--c) 26%,transparent);box-shadow:0 0 26px -16px var(--c);overflow:hidden;display:flex;flex-direction:column;gap:11px;" style-hover="border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 0 32px -10px var(--c);">
               <div style="display:flex;align-items:center;gap:10px;min-width:0;">
                 <div style="flex:none;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:14px;font-weight:700;color:#04060a;background:var(--c);box-shadow:0 0 14px -4px var(--c);">{{ card.initial }}</div>
                 <div style="min-width:0;display:flex;flex-direction:column;gap:1px;flex:1;">
                   <div style="font-family:var(--font-sans);font-size:13px;font-weight:600;color:#eaf2f5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.label }}</div>
-                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:rgba(234,242,245,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.sub }}</div>
+                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:rgba(234,242,245,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.sub }}</div>
                 </div>
               </div>
               <div style="font-family:var(--font-mono);font-size:29px;font-weight:600;letter-spacing:.06em;color:#fff;text-shadow:0 0 18px color-mix(in srgb,var(--c) 55%,transparent);">{{ card.codeFmt }}</div>
@@ -345,6 +351,9 @@ class Component extends DCLogic {
     window.addEventListener('dragover', this._onDragOver);
     window.addEventListener('dragleave', this._onDragLeave);
     window.addEventListener('drop', this._onDrop);
+    // a11y: 投屏时 Esc 一键退出演示模式（原来只有一个低对比度的小链接）
+    this._onKey = (e) => { if (e.key === 'Escape' && this.state.mode === 'view' && this.state.present) this.exitPresent(); };
+    window.addEventListener('keydown', this._onKey);
     this.loadFromHash();
     this.registerSW();
   }
@@ -358,6 +367,7 @@ class Component extends DCLogic {
     window.removeEventListener('dragover', this._onDragOver);
     window.removeEventListener('dragleave', this._onDragLeave);
     window.removeEventListener('drop', this._onDrop);
+    window.removeEventListener('keydown', this._onKey);
   }
 
   registerSW() {
@@ -1062,6 +1072,8 @@ class Component extends DCLogic {
         barWidth: (frac * 100).toFixed(1) + '%',
         foot: (s.copiedIdx === i) ? '已复制 ✓' : ((lv.sec != null ? lv.sec : '–') + 's'),
         onCopy: () => this.copyBoardCode(lv.code, i),
+        onKey: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.copyBoardCode(lv.code, i); } },
+        copyAria: '复制 ' + labelTxt + ' 的验证码',
       };
     });
 
@@ -1087,6 +1099,8 @@ class Component extends DCLogic {
       barWidth: (frac * 100).toFixed(2) + '%',
       copyLabel: s.copied ? '已复制 ✓' : '复制验证码',
       onCopyCode: () => { if (code && code.length) this.copyText(code, 'copied'); },
+      onCopyKey: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (code && code.length) this.copyText(code, 'copied'); } },
+      copyAria: '复制验证码',
       onAddAnother: () => this.addAnother(),
       inputValue: s.inputValue,
       inputLabel: s.inputLabel,
