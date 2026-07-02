@@ -2,10 +2,18 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<!-- CSP：把「密钥不出网」从 README 承诺变成浏览器强制——connect-src 'self' 之后页面里任何代码
+     （含将来更新 vendor 时被污染的库）都发不出外部请求。'unsafe-eval' 是 dc-runtime 编译逻辑类
+     所必需（support.js 内 new Function）；style 'unsafe-inline' 供模板内联样式与 helmet <style>；
+     img data: 供 favicon 与 QR 码。用 meta 而非响应头：四个部署平台（含 GitHub Pages）通吃。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#06090c">
 <title>2FA</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306090c'/%3E%3Cpath d='M32 8 52 16v14c0 13-8.5 21-20 26-11.5-5-20-13-20-26V16z' fill='none' stroke='%2322d3ee' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M23 32l7 7 12-13' fill='none' stroke='%2322d3ee' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<!-- iOS 加主屏不认 SVG 图标（会拿白底截图充数）——补一张 180×180 不透明 PNG，方角由 iOS 自己裁圆 -->
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="manifest" href="./manifest.json">
 <!-- qrcode.js（57KB）只在点"显示二维码"时才用——defer 让它不阻塞首屏（toggleQr 已守卫 typeof qrcode） -->
 <script src="./vendor/qrcode.js" defer></script>
@@ -60,6 +68,11 @@
     <div style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(4,8,12,.8);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;">
       <div style="border:2px dashed var(--accent,#22d3ee);border-radius:18px;padding:38px 56px;font-family:var(--font-mono);font-size:14px;letter-spacing:.12em;color:var(--accent,#22d3ee);text-transform:uppercase;">{{ t.dropToImport }}</div>
     </div>
+  </sc-if>
+
+  <!-- ===== 时钟偏差警告（所有模式，含演示——码可能无效比投屏干净更要紧）===== -->
+  <sc-if value="{{ clockWarn }}" hint-placeholder-val="">
+    <div role="alert" style="position:fixed;top:52px;left:50%;transform:translateX(-50%);z-index:56;max-width:min(92vw,560px);padding:9px 16px;border:1px solid rgba(251,191,36,.4);border-radius:9999px;background:rgba(30,20,4,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fbbf24;font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-align:center;">{{ clockWarn }}</div>
   </sc-if>
 
   <!-- ===== language toggle（演示模式下隐藏）===== -->
@@ -164,7 +177,7 @@
             <span>{{ t.secretLabel }}</span>
             <button onClick="{{ onScanImport }}" style="border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;padding:4px 12px;cursor:pointer;text-transform:uppercase;" style-hover="background:rgba(255,255,255,.1);">{{ t.scanImport }}</button>
           </span>
-          <textarea onChange="{{ onInput }}" value="{{ inputValue }}" rows="2" placeholder="{{ t.secretPlaceholder }}" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:14px;line-height:1.6;resize:none;padding:13px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
+          <textarea onChange="{{ onInput }}" value="{{ inputValue }}" rows="2" placeholder="{{ t.secretPlaceholder }}" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" style="width:100%;font-family:var(--font-mono);font-size:14px;line-height:1.6;resize:none;padding:13px 15px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
         </label>
 
         <sc-if value="{{ error }}" hint-placeholder-val="">
@@ -270,7 +283,7 @@
             <button onClick="{{ onReadClipboard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.readClipboard }}</button>
             <button onClick="{{ onScanBoard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ t.scanGA }}</button>
           </div>
-          <textarea onChange="{{ onPasteImport }}" value="{{ pasteValue }}" rows="3" placeholder="{{ t.pastePlaceholder }}" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:12px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
+          <textarea onChange="{{ onPasteImport }}" value="{{ pasteValue }}" rows="3" placeholder="{{ t.pastePlaceholder }}" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" style="width:100%;font-family:var(--font-mono);font-size:12px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
           <button onClick="{{ onCommitPaste }}" style="align-self:flex-start;height:40px;padding:0 20px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ t.parseImport }}</button>
           <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.6);line-height:1.7;">{{ t.importHint }}</div>
         </div>
@@ -355,6 +368,8 @@ const STR = {
     imported: (n) => '已导入 ' + n + ' 个账号 ✓', importCap: (n) => '已达上限 ' + n + ' 个账号，多余的已忽略',
     alreadyInBoard: '这些账号已在看板中', noLinksFound: '未识别到账号链接', noLinksInFile: '文件中未识别到账号链接', noLinksDrop: '未在拖入内容中识别到账号链接',
     boardLinkBad: '看板链接无法解析（可能被截断或损坏）', cleared: '已清空（重新导入即可恢复）',
+    boardUrlLong: (kb) => '注意：看板链接约 ' + kb + 'KB，部分浏览器的书签 / 同步会截断长链接——账号多时建议用「下载 .txt」保存底账',
+    clockSkewWarn: (s) => '⚠ 设备时钟偏差约 ' + s + ' 秒——验证码可能无效，请校准系统时间',
     fileTooBig: '文件过大（>2MB），请确认是账号链接列表', fileSkipBig: '跳过过大文件（>2MB）', readFileFail: '读取文件失败', readFail: '读取失败', downloadFail: '下载失败',
     clipboardNo: '此浏览器不支持读取剪贴板，请手动粘贴', clipboardFail: '读取剪贴板失败（可能需要授权）', clipboardNoLinks: '剪贴板中未识别到账号链接',
     scanNo: '此浏览器不支持扫码，请粘贴链接导入', scanNoAccount: '二维码中未识别到账号', scanNoSupport: '此浏览器不支持扫码，请直接粘贴 otpauth:// 链接',
@@ -389,6 +404,8 @@ const STR = {
     imported: (n) => 'Imported ' + n + (n === 1 ? ' account ✓' : ' accounts ✓'), importCap: (n) => 'Reached the ' + n + '-account limit, extras ignored',
     alreadyInBoard: 'These accounts are already on the board', noLinksFound: 'No account links found', noLinksInFile: 'No account links found in the file', noLinksDrop: 'No account links found in what you dropped',
     boardLinkBad: 'Board link could not be parsed (truncated or corrupted?)', cleared: 'Cleared (re-import to restore)',
+    boardUrlLong: (kb) => 'Note: the board link is ~' + kb + 'KB — some browsers truncate long bookmarks. With many accounts, prefer “Download .txt”.',
+    clockSkewWarn: (s) => '⚠ Device clock is ~' + s + 's off — codes may be invalid. Please fix your system time.',
     fileTooBig: 'File too large (>2MB) — is it a list of account links?', fileSkipBig: 'Skipped an oversized file (>2MB)', readFileFail: 'Failed to read the file', readFail: 'Read failed', downloadFail: 'Download failed',
     clipboardNo: 'This browser can’t read the clipboard — paste manually', clipboardFail: 'Clipboard read failed (permission needed?)', clipboardNoLinks: 'No account links in the clipboard',
     scanNo: 'This browser can’t scan QR — paste a link to import', scanNoAccount: 'No account found in the QR', scanNoSupport: 'This browser can’t scan QR — paste the otpauth:// link directly',
@@ -427,6 +444,8 @@ class Component extends DCLogic {
     // —— 演示模式 ——
     present: false, nolabel: false,
     presentPanel: false, presentNolabel: false, presentUrlCopied: false,
+    // —— 时钟偏差（秒，带符号；null=正常/未知）——
+    clockSkew: null,
   };
 
   // —— i18n ——
@@ -461,6 +480,7 @@ class Component extends DCLogic {
     window.addEventListener('keydown', this._onKey);
     this.loadFromHash();
     this.registerSW();
+    this.checkClock();
   }
   componentDidUpdate(prevProps, prevState) {
     this.applyAccent();
@@ -492,6 +512,22 @@ class Component extends DCLogic {
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
+  }
+
+  // 正确性：设备时钟不准是"自信错码"的最后一大来源——本地钟偏 1 分钟，所有码全错而 UI 毫无异样。
+  // 用同源 HEAD 响应的 Date 头对表（sw.js 不拦非 GET，天然穿透缓存拿到真实服务器时间）。
+  // 离线 / 失败静默跳过；只提示不校正——修根源（系统时间）比悄悄补偿更诚实。
+  async checkClock() {
+    try {
+      const t0 = Date.now();
+      const res = await fetch(location.pathname, { method: 'HEAD', cache: 'no-store' });
+      const t1 = Date.now();
+      const server = Date.parse(res.headers.get('Date') || '');
+      if (!Number.isFinite(server)) return;
+      // Date 头精度 1s（向下截断，+500ms 取中值）；本地时刻取请求往返的中点
+      const skew = Math.round((server + 500 - (t0 + t1) / 2) / 1000);
+      if (Math.abs(skew) >= 10) this.setState({ clockSkew: skew });
+    } catch (e) {}
   }
 
   applyAccent() {
@@ -893,6 +929,9 @@ class Component extends DCLogic {
       boardMsg: truncated ? this.t().importCap(MAX) : (added ? this.t().imported(added) : this.t().alreadyInBoard),
     }, () => this.refreshBoardAll());
     document.title = this.t().titleBoard;
+    // 清掉残留 hash：从 view「加入看板」后不清，刷新会被 loadFromHash 拉回单号；
+    // #board= 挂着时导入新号后不清，刷新会用 hash 里的旧组覆盖缓存、丢掉刚导入的。
+    try { history.replaceState(null, document.title, location.pathname + location.search); } catch (e) {}
   }
 
   // —— 解析：从任意文本里抠出账号链接（格式无关）——
@@ -1219,6 +1258,8 @@ class Component extends DCLogic {
       langToggleLabel: t.langToggle, langSwitchAria: t.langSwitchAria,
       onToggleLang: () => this.toggleLang(),
       showLangToggle: !isPresent, // 演示模式下隐藏，保持投屏干净
+      // 时钟偏差警告：演示模式也显示——码可能无效比投屏干净更要紧
+      clockWarn: s.clockSkew != null ? t.clockSkewWarn(Math.abs(s.clockSkew)) : '',
       isView, isSetup: s.mode === 'setup',
       useRing: progressStyle === 'ring',
       useBar: progressStyle === 'bar',
@@ -1291,7 +1332,12 @@ class Component extends DCLogic {
       onReadClipboard: () => this.readClipboardImport(),
       onCopyLinks: () => { const txt = this.exportLinks(); if (txt) this.copyText(txt, 'linksCopied'); },
       onDownloadLinks: () => { const txt = this.exportLinks(); if (txt) this.downloadText('easy2fa-accounts.txt', txt); },
-      onCopyBoardUrl: () => { const u = this.boardUrl(); if (u) this.copyText(u, 'boardUrlCopied'); },
+      onCopyBoardUrl: () => {
+        const u = this.boardUrl(); if (!u) return;
+        this.copyText(u, 'boardUrlCopied');
+        // 账号很多时 #board= 会长到被部分浏览器书签/同步截断——复制成功也要提醒改用 .txt 底账
+        if (u.length > 8192) this.setState({ boardMsg: this.t().boardUrlLong(Math.round(u.length / 1024)) });
+      },
       linksCopyLabel: s.linksCopied ? t.copied : t.copyAllLinks,
       boardUrlCopyLabel: s.boardUrlCopied ? t.copied : t.copyBoardLink,
       onAddToBoard: () => { const st = this.state; this.addAccounts([{ secret: st.secret, label: st.label, issuer: st.issuer, digits: st.digits, period: st.period, algorithm: st.algorithm, valid: true }]); },
