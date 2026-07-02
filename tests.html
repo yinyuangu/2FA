@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Easy2FA — 核心算法自测</title>
+<title>Easy2FA — 核心逻辑自测</title>
 <style>
   :root{ color-scheme: dark; }
   body{ margin:0; padding:32px; background:#06090c; color:#eaf2f5; font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,Monaco,monospace; }
@@ -17,97 +17,83 @@
   .pass .s{ color:#34d399; } .err .s{ color:#fb7185; }
   .err{ background:rgba(251,113,133,.06); }
   .d{ color:#9fb3bf; }
+  h2{ font-size:13px; letter-spacing:.08em; color:#22d3ee; margin:22px 0 4px; text-transform:uppercase; }
 </style>
 </head>
 <body>
-<h1>Easy2FA — 核心算法自测</h1>
-<p class="note">这些纯函数镜像 <code>index.html</code>；改动其中的 TOTP / base32 / 迁移码解码逻辑后，请同步更新这里并重跑。<br>
-需经 <b>localhost</b> 或 <b>HTTPS</b> 打开（Web Crypto 需要安全上下文；<code>file://</code> 不行）。</p>
+<h1>Easy2FA — 核心逻辑自测</h1>
+<p class="note">本页<b>直接从 index.html 提取真实实现</b>来执行——无镜像副本、零漂移：改了 index.html 刷新本页即测最新代码。<br>
+需经 <b>localhost</b> 或 <b>HTTPS</b> 打开（Web Crypto 与 fetch 需要安全上下文；<code>file://</code> 不行）。</p>
 <div id="summary">运行中…</div>
 <div id="out"></div>
 
 <script>
 // ============================================================================
-// 以下纯函数逐字镜像 index.html 的实现。改了一边记得同步另一边。
+// 从 index.html 抠出 Component 的纯逻辑方法，拼成对象字面量执行。
+// 方法体内的 this.xxx 互调用在对象上天然成立；state/ACCENTS 由这里 mock。
+// 任何方法找不到 / 花括号不配对都会让整页 FAIL——比"镜像忘了同步"沉默腐烂强。
 // ============================================================================
-function base32Decode(b32){
-  const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  b32=(b32||'').replace(/=+$/,'').replace(/\s/g,'').toUpperCase();
-  if(!b32) return null;
-  let bits=0,value=0; const out=[];
-  for(const ch of b32){ const i=A.indexOf(ch); if(i<0) return null; value=(value<<5)|i; bits+=5; if(bits>=8){ out.push((value>>>(bits-8))&0xff); bits-=8; } }
-  return out.length ? new Uint8Array(out) : null;
+const METHODS = [
+  'base32Decode', 'base32Encode', 'totp', 'utf8', 'b64ToBytes',
+  'decodeMigration', 'decodeOtpParam', 'parseMigration',
+  'clampDigits', 'clampPeriod', 'normAlgo',
+  'parseInput', 'parseAccountUrl', 'parseAccountsFromText',
+  'hashStr', 'pickColor', 'normalizeAccount',
+  'encodeBoardParam', 'decodeBoardParam', 'buildAccountUrl', 'fmtCode',
+];
+
+function extractMethod(html, name) {
+  // class 方法两空格缩进起行；调用点（this.xxx( ）不会被 \n␣␣ 前缀匹配到
+  const re = new RegExp('\\n  (?:async )?' + name + '\\s*\\(');
+  const m = re.exec(html);
+  if (!m) throw new Error('index.html 中未找到方法 ' + name + '()');
+  const open = html.indexOf('{', m.index + m[0].length - 1);
+  let depth = 0, j = open;
+  for (; j < html.length; j++) {
+    if (html[j] === '{') depth++;
+    else if (html[j] === '}') { depth--; if (depth === 0) break; }
+  }
+  if (depth !== 0) throw new Error('方法 ' + name + '() 花括号不配对（提取失败）');
+  return html.slice(m.index + 1, j + 1);
 }
-function base32Encode(bytes){
-  const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  let bits=0,value=0,out='';
-  for(let i=0;i<bytes.length;i++){ value=(value<<8)|bytes[i]; bits+=8; while(bits>=5){ out+=A[(value>>>(bits-5))&31]; bits-=5; } }
-  if(bits>0) out+=A[(value<<(5-bits))&31];
-  return out;
-}
-async function totp(secret, time, digits, period, algorithm){
-  const key=base32Decode(secret);
-  if(!key) throw new Error('invalid');
-  const counter=Math.floor(time/period);
-  const buf=new ArrayBuffer(8); const dv=new DataView(buf);
-  dv.setUint32(0,Math.floor(counter/0x100000000)); dv.setUint32(4,counter>>>0);
-  const ck=await crypto.subtle.importKey('raw',key,{name:'HMAC',hash:algorithm},false,['sign']);
-  const sig=new Uint8Array(await crypto.subtle.sign('HMAC',ck,buf));
-  const off=sig[sig.length-1]&0x0f;
-  const bin=((sig[off]&0x7f)<<24)|((sig[off+1]&0xff)<<16)|((sig[off+2]&0xff)<<8)|(sig[off+3]&0xff);
-  return String(bin%Math.pow(10,digits)).padStart(digits,'0');
-}
-function utf8(bytes){ try{ return new TextDecoder().decode(bytes); }catch(e){ return ''; } }
-function b64ToBytes(b64){
-  try{ const bin=atob((b64||'').replace(/-/g,'+').replace(/_/g,'/')); const out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }
-  catch(e){ return null; }
-}
-function decodeMigration(buf){
-  const accounts=[]; let pos=0;
-  const varint=()=>{ let r=0,sh=0,b; do{ b=buf[pos++]; r+=(b&0x7f)*Math.pow(2,sh); sh+=7; }while(b&0x80); return r; };
-  const skip=(w)=>{ if(w===0){ while(buf[pos]&0x80) pos++; pos++; } else if(w===2){ const l=varint(); pos+=l; } else if(w===5) pos+=4; else if(w===1) pos+=8; };
-  while(pos<buf.length){ const tag=varint(); const field=tag>>>3,wire=tag&7;
-    if(field===1&&wire===2){ const len=varint(); const sub=buf.subarray(pos,pos+len); pos+=len; const a=decodeOtpParam(sub); if(a) accounts.push(a); }
-    else skip(wire); }
-  return accounts;
-}
-function decodeOtpParam(buf){
-  let pos=0;
-  const varint=()=>{ let r=0,sh=0,b; do{ b=buf[pos++]; r+=(b&0x7f)*Math.pow(2,sh); sh+=7; }while(b&0x80); return r; };
-  const skip=(w)=>{ if(w===0){ while(buf[pos]&0x80) pos++; pos++; } else if(w===2){ const l=varint(); pos+=l; } else if(w===5) pos+=4; else if(w===1) pos+=8; };
-  let secretBytes=null,name='',issuer='',algo=1,digitsEnum=1,type=2;
-  while(pos<buf.length){ const tag=varint(); const field=tag>>>3,wire=tag&7;
-    if(field===1&&wire===2){ const l=varint(); secretBytes=buf.subarray(pos,pos+l); pos+=l; }
-    else if(field===2&&wire===2){ const l=varint(); name=utf8(buf.subarray(pos,pos+l)); pos+=l; }
-    else if(field===3&&wire===2){ const l=varint(); issuer=utf8(buf.subarray(pos,pos+l)); pos+=l; }
-    else if(field===4&&wire===0) algo=varint();
-    else if(field===5&&wire===0) digitsEnum=varint();
-    else if(field===6&&wire===0) type=varint();
-    else skip(wire); }
-  if(!secretBytes||!secretBytes.length) return null;
-  if(type===1) return null;
-  const digits=digitsEnum===1?6:digitsEnum===2?8:null;
-  const algorithm=algo===1?'SHA-1':algo===2?'SHA-256':algo===3?'SHA-512':null;
-  if(digits===null||algorithm===null) return null;
-  return { secret: base32Encode(secretBytes), label:name, issuer, digits, period:30, algorithm, valid:true };
+
+async function loadApp() {
+  // cache:'no-store'：sw.js 对这类请求直接放行，保证抓到的是磁盘上最新的 index.html
+  const res = await fetch('./index.html', { cache: 'no-store' });
+  if (!res.ok) throw new Error('无法读取 index.html：HTTP ' + res.status);
+  const html = await res.text();
+  const src = METHODS.map((n) => extractMethod(html, n));
+  const app = new Function('return {\n' + src.join(',\n') + '\n};')();
+  const am = /ACCENTS = (\[[^\]]*\])/.exec(html);
+  app.ACCENTS = am ? JSON.parse(am[1].replace(/'/g, '"')) : ['#22d3ee'];
+  app.state = { accounts: [] };
+  return app;
 }
 
 // ============================================================================
 // 测试工具
 // ============================================================================
-const results=[];
-function check(name, cond, detail){ results.push({name, ok:!!cond, detail: detail||''}); }
-async function eq(name, got, want){ const g=await got; check(name, g===want, 'got '+JSON.stringify(g)+' / want '+JSON.stringify(want)); }
-function ascii(s){ return new Uint8Array([...s].map(c=>c.charCodeAt(0))); }
-function bytesEq(a,b){ if(!a||!b||a.length!==b.length) return false; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false; return true; }
-function varintEnc(n){ const b=[]; while(n>0x7f){ b.push((n&0x7f)|0x80); n=Math.floor(n/128); } b.push(n); return b; }
-function pbField(tag,bytes){ return [tag, ...varintEnc(bytes.length), ...bytes]; }
+const results = [];
+let section = '';
+function group(name){ section = name; results.push({group:name}); }
+function check(name, cond, detail){ results.push({name, ok:!!cond, detail:detail||''}); }
+async function eq(name, got, want){ const g = await got; check(name, g === want, 'got ' + JSON.stringify(g) + ' / want ' + JSON.stringify(want)); }
+function ascii(s){ return new Uint8Array([...s].map(c => c.charCodeAt(0))); }
+function bytesEq(a, b){ if(!a || !b || a.length !== b.length) return false; for(let i = 0; i < a.length; i++) if(a[i] !== b[i]) return false; return true; }
+function varintEnc(n){ const b = []; while(n > 0x7f){ b.push((n & 0x7f) | 0x80); n = Math.floor(n / 128); } b.push(n); return b; }
+function pbField(tag, bytes){ return [tag, ...varintEnc(bytes.length), ...bytes]; }
+function b64url(arr){ let s = ''; for(const x of arr) s += String.fromCharCode(x); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
 
 async function run(){
+  const app = await loadApp();
+  group('提取器');
+  check('从 index.html 提取 ' + METHODS.length + ' 个真实方法', true);
+
   // ---- RFC 6238 Appendix B 向量（8 位、period 30）----
-  const SHA1   = base32Encode(ascii('12345678901234567890'));
-  const SHA256 = base32Encode(ascii('12345678901234567890123456789012'));
-  const SHA512 = base32Encode(ascii('1234567890123456789012345678901234567890123456789012345678901234'));
+  group('TOTP · RFC 6238');
+  const SHA1   = app.base32Encode(ascii('12345678901234567890'));
+  const SHA256 = app.base32Encode(ascii('12345678901234567890123456789012'));
+  const SHA512 = app.base32Encode(ascii('1234567890123456789012345678901234567890123456789012345678901234'));
   const vectors = [
     [59,          '94287082','46119246','90693936'],
     [1111111109,  '07081804','68084774','25091201'],
@@ -115,56 +101,160 @@ async function run(){
     [1234567890,  '89005924','91819424','93441116'],
     [2000000000,  '69279037','90698825','38618901'],
   ];
-  for(const [T,s1,s256,s512] of vectors){
-    await eq('RFC6238 T='+T+' SHA-1',   totp(SHA1,  T,8,30,'SHA-1'),   s1);
-    await eq('RFC6238 T='+T+' SHA-256', totp(SHA256,T,8,30,'SHA-256'), s256);
-    await eq('RFC6238 T='+T+' SHA-512', totp(SHA512,T,8,30,'SHA-512'), s512);
+  for(const [T, s1, s256, s512] of vectors){
+    await eq('RFC6238 T=' + T + ' SHA-1',   app.totp(SHA1,   T, 8, 30, 'SHA-1'),   s1);
+    await eq('RFC6238 T=' + T + ' SHA-256', app.totp(SHA256, T, 8, 30, 'SHA-256'), s256);
+    await eq('RFC6238 T=' + T + ' SHA-512', app.totp(SHA512, T, 8, 30, 'SHA-512'), s512);
   }
 
-  // ---- base32 已知向量 + 往返 ----
+  // ---- base32 ----
+  group('base32');
   check('base32Decode("JBSWY3DPEHPK3PXP") = "Hello!"+deadbeef',
-    bytesEq(base32Decode('JBSWY3DPEHPK3PXP'), new Uint8Array([0x48,0x65,0x6c,0x6c,0x6f,0x21,0xde,0xad,0xbe,0xef])));
-  check('base32 大小写无关', bytesEq(base32Decode('jbswy3dpehpk3pxp'), base32Decode('JBSWY3DPEHPK3PXP')));
-  check('base32Decode 非法字符 → null', base32Decode('JBSW!!!0189') === null);
+    bytesEq(app.base32Decode('JBSWY3DPEHPK3PXP'), new Uint8Array([0x48,0x65,0x6c,0x6c,0x6f,0x21,0xde,0xad,0xbe,0xef])));
+  check('base32 大小写无关', bytesEq(app.base32Decode('jbswy3dpehpk3pxp'), app.base32Decode('JBSWY3DPEHPK3PXP')));
+  check('base32Decode 非法字符 → null', app.base32Decode('JBSW!!!0189') === null);
   for(const arr of [[1],[0,255],[1,2,3,4,5],[72,101,108,108,111,33,222,173,190,239]]){
-    const b=new Uint8Array(arr);
-    check('base32 往返 ['+arr.join(',')+']', bytesEq(base32Decode(base32Encode(b)), b));
+    const b = new Uint8Array(arr);
+    check('base32 往返 [' + arr.join(',') + ']', bytesEq(app.base32Decode(app.base32Encode(b)), b));
   }
 
-  // ---- 迁移码解码：构造已知 payload → 解回来 ----
-  const secretBytes=[...base32Decode('JBSWY3DPEHPK3PXP')];
-  const otp=[...pbField(0x0A,secretBytes), ...pbField(0x12,[...ascii('bob')]), ...pbField(0x1A,[...ascii('Acme')]), 0x20,1, 0x28,1, 0x30,2];
-  const payload=new Uint8Array(pbField(0x0A,otp));
-  const accts=decodeMigration(payload);
-  check('迁移码解出 1 个账号', accts.length===1, 'got '+accts.length);
+  // ---- 参数 clamp / 算法归一 ----
+  group('clamp / normAlgo');
+  check('clampDigits("7")=7', app.clampDigits('7') === 7);
+  check('clampDigits("9")→6（越界回默认）', app.clampDigits('9') === 6);
+  check('clampDigits(undefined)→6', app.clampDigits(undefined) === 6);
+  check('clampPeriod("60")=60', app.clampPeriod('60') === 60);
+  check('clampPeriod("5")→30（下限 10）', app.clampPeriod('5') === 30);
+  check('clampPeriod("301")→30（上限 300）', app.clampPeriod('301') === 30);
+  check('normAlgo("SHA256")=SHA-256', app.normAlgo('SHA256') === 'SHA-256');
+  check('normAlgo("sha-512")=SHA-512', app.normAlgo('sha-512') === 'SHA-512');
+  check('normAlgo("SHA1")=SHA-1', app.normAlgo('SHA1') === 'SHA-1');
+  check('normAlgo(null)=SHA-1', app.normAlgo(null) === 'SHA-1');
+  check('normAlgo("MD5")→SHA-1（未知回默认）', app.normAlgo('MD5') === 'SHA-1');
+
+  // ---- parseInput（setup 输入解析）----
+  group('parseInput');
+  const pi = app.parseInput('otpauth://totp/Acme:bob?secret=JBSWY3DPEHPK3PXP&issuer=Acme&digits=8&period=60&algorithm=SHA256');
+  check('otpauth 完整解析 valid', pi && pi.valid);
+  check('otpauth issuer=Acme', pi && pi.issuer === 'Acme');
+  check('otpauth label=bob（issuer 前缀剥离）', pi && pi.label === 'bob');
+  check('otpauth digits=8', pi && pi.digits === 8);
+  check('otpauth period=60', pi && pi.period === 60);
+  check('otpauth algorithm=SHA-256', pi && pi.algorithm === 'SHA-256');
+  const ph = app.parseInput('otpauth://hotp/x?secret=JBSWY3DPEHPK3PXP');
+  check('HOTP 链接被拒（valid=false, reason=hotp）', ph && !ph.valid && ph.reason === 'hotp');
+  check('裸密钥带空格小写 → valid', (app.parseInput('jbsw y3dp ehpk 3pxp') || {}).valid === true);
+  check('非法字符裸密钥 → invalid', (app.parseInput('0189') || {}).valid === false);
+  const pl = app.parseInput('otpauth://totp/prod-db?secret=JBSWY3DPEHPK3PXP');
+  check('无 issuer 前缀时 label=整个路径', pl && pl.valid && pl.label === 'prod-db' && pl.issuer === '');
+
+  // ---- parseAccountUrl（书签链接）----
+  group('parseAccountUrl');
+  const pa = app.parseAccountUrl('https://x.example/2fa/#secret=JBSWY3DPEHPK3PXP&label=GitHub&digits=8&period=60&algorithm=256');
+  check('书签链接解析 valid', pa && pa.valid);
+  check('书签 label=GitHub', pa && pa.label === 'GitHub');
+  check('书签 digits=8 period=60 algo=SHA-256', pa && pa.digits === 8 && pa.period === 60 && pa.algorithm === 'SHA-256');
+  check('无 secret 的 URL → null', app.parseAccountUrl('https://x.example/#label=nope') === null);
+
+  // ---- parseAccountsFromText（混合文本抠链接 + 去重）----
+  group('parseAccountsFromText');
+  const mixed = [
+    '# 我的测试号（注释行应被忽略）',
+    'otpauth://totp/Acme:bob?secret=JBSWY3DPEHPK3PXP&issuer=Acme',
+    '一些噪声行 hello world',
+    'https://tool.example/2fa/#secret=GEZDGNBVGY3TQOJQ&label=Stripe',
+    'secret=MFRGGZDFMZTWQ2LK&label=BareLine',
+    'otpauth://totp/Acme:bob?secret=JBSWY3DPEHPK3PXP&issuer=Acme',
+  ].join('\n');
+  const accs = app.parseAccountsFromText(mixed);
+  check('混合文本抠出 3 个（重复 otpauth 去重）', accs.length === 3, 'got ' + accs.length);
+  check('第 1 条：otpauth bob@Acme', accs[0] && accs[0].label === 'bob' && accs[0].issuer === 'Acme');
+  check('第 2 条：书签 Stripe', accs[1] && accs[1].label === 'Stripe' && accs[1].secret === 'GEZDGNBVGY3TQOJQ');
+  check('第 3 条：裸 secret= 行', accs[2] && accs[2].label === 'BareLine' && accs[2].secret === 'MFRGGZDFMZTWQ2LK');
+  check('空文本 → []', app.parseAccountsFromText('').length === 0);
+  check('纯噪声 → []', app.parseAccountsFromText('nothing to see\nhere').length === 0);
+
+  // ---- Google Authenticator 迁移码（protobuf）----
+  group('迁移码');
+  const secretBytes = [...app.base32Decode('JBSWY3DPEHPK3PXP')];
+  const otp = [...pbField(0x0A, secretBytes), ...pbField(0x12, [...ascii('bob')]), ...pbField(0x1A, [...ascii('Acme')]), 0x20,1, 0x28,1, 0x30,2];
+  const payload = new Uint8Array(pbField(0x0A, otp));
+  const accts = app.decodeMigration(payload);
+  check('迁移码解出 1 个账号', accts.length === 1, 'got ' + accts.length);
   if(accts[0]){
-    check('迁移码 secret 往返 = JBSWY3DPEHPK3PXP', accts[0].secret==='JBSWY3DPEHPK3PXP', 'got '+accts[0].secret);
-    check('迁移码 name=bob', accts[0].label==='bob');
-    check('迁移码 issuer=Acme', accts[0].issuer==='Acme');
-    check('迁移码 digits=6', accts[0].digits===6);
-    check('迁移码 algorithm=SHA-1', accts[0].algorithm==='SHA-1');
+    check('迁移码 secret 往返 = JBSWY3DPEHPK3PXP', accts[0].secret === 'JBSWY3DPEHPK3PXP', 'got ' + accts[0].secret);
+    check('迁移码 name=bob', accts[0].label === 'bob');
+    check('迁移码 issuer=Acme', accts[0].issuer === 'Acme');
+    check('迁移码 digits=6', accts[0].digits === 6);
+    check('迁移码 algorithm=SHA-1', accts[0].algorithm === 'SHA-1');
   }
-  // HOTP（type=1）应被跳过
-  const hotp=new Uint8Array(pbField(0x0A,[...pbField(0x0A,secretBytes), 0x30,1]));
-  check('迁移码跳过 HOTP（type=1）', decodeMigration(hotp).length===0);
+  const hotp = new Uint8Array(pbField(0x0A, [...pbField(0x0A, secretBytes), 0x30,1]));
+  check('迁移码跳过 HOTP（type=1）', app.decodeMigration(hotp).length === 0);
+  // 全链路：otpauth-migration:// URL → 账号
+  const mig = app.parseMigration('otpauth-migration://offline?data=' + b64url(payload));
+  check('parseMigration 全链路解出 1 个', mig.length === 1 && mig[0].secret === 'JBSWY3DPEHPK3PXP');
+  check('parseMigration 坏 data → []', app.parseMigration('otpauth-migration://offline?data=%%%').length === 0);
+
+  // ---- normalizeAccount ----
+  group('normalizeAccount');
+  const na = app.normalizeAccount({ secret: 'jbswy3dp ehpk3pxp', label: 'x', digits: '99', period: '5', algorithm: 'sha256' });
+  check('secret 去空格并归一大写', na.secret === 'JBSWY3DPEHPK3PXP');
+  check('digits/period 越界回默认', na.digits === 6 && na.period === 30);
+  check('algorithm 归一 SHA-256', na.algorithm === 'SHA-256');
+  const n1 = app.normalizeAccount({ secret: 'jbswy3dpehpk3pxp' });
+  const n2 = app.normalizeAccount({ secret: 'JBSWY3DPEHPK3PXP' });
+  check('同密钥不同大小写归一后一致（去重键）', n1.secret === n2.secret);
+
+  // ---- 看板链接编码往返 ----
+  group('#board= 编码');
+  app.state = { accounts: [
+    app.normalizeAccount({ secret: 'JBSWY3DPEHPK3PXP', label: 'A', issuer: 'Acme', digits: 8, period: 60, algorithm: 'SHA-256' }),
+    app.normalizeAccount({ secret: 'GEZDGNBVGY3TQOJQ', label: 'B' }),
+  ] };
+  const bp = app.encodeBoardParam();
+  check('encodeBoardParam 非空且 URL-safe', !!bp && !/[+/=]/.test(bp));
+  const back = app.decodeBoardParam(bp);
+  check('board 往返数量 = 2', back.length === 2, 'got ' + back.length);
+  check('board 往返字段完整（A/8位/60s/SHA-256）',
+    back[0] && back[0].secret === 'JBSWY3DPEHPK3PXP' && back[0].label === 'A' && back[0].issuer === 'Acme'
+    && back[0].digits === 8 && back[0].period === 60 && back[0].algorithm === 'SHA-256');
+  check('decodeBoardParam 坏输入 → []', app.decodeBoardParam('!!!not-base64').length === 0);
+  check('decodeBoardParam 非数组 JSON → []', app.decodeBoardParam(b64url([...ascii('{"a":1}')])).length === 0);
+
+  // ---- 书签链接生成 ----
+  group('buildAccountUrl');
+  const u1 = new URLSearchParams(app.buildAccountUrl({ secret: 'JBSWY3DPEHPK3PXP', label: 'GitHub', issuer: 'Acme', digits: 8, period: 60, algorithm: 'SHA-256' }).split('#')[1]);
+  check('非默认参数写入 hash', u1.get('secret') === 'JBSWY3DPEHPK3PXP' && u1.get('digits') === '8' && u1.get('period') === '60' && u1.get('algorithm') === '256');
+  const u2 = new URLSearchParams(app.buildAccountUrl({ secret: 'JBSWY3DPEHPK3PXP', label: '', issuer: '', digits: 6, period: 30, algorithm: 'SHA-1' }).split('#')[1]);
+  check('默认参数省略（hash 只有 secret）', u2.get('secret') === 'JBSWY3DPEHPK3PXP' && !u2.has('digits') && !u2.has('period') && !u2.has('algorithm') && !u2.has('label'));
+
+  // ---- 验证码分组显示 ----
+  group('fmtCode');
+  check('6 位 → "123 456"', app.fmtCode('123456') === '123 456');
+  check('7 位 → "1234 567"', app.fmtCode('1234567') === '1234 567');
+  check('8 位 → "1234 5678"', app.fmtCode('12345678') === '1234 5678');
+  check('空 → ""', app.fmtCode('') === '');
 
   render();
 }
 
 function render(){
-  const out=document.getElementById('out');
-  const passed=results.filter(r=>r.ok).length, total=results.length;
-  const sum=document.getElementById('summary');
-  sum.textContent = (passed===total ? '✓ 全部通过 ' : '✗ 有失败 ') + passed+' / '+total;
-  sum.className = passed===total ? 'ok' : 'fail';
-  out.innerHTML = results.map(r=>
-    '<div class="row '+(r.ok?'pass':'err')+'"><span class="s">'+(r.ok?'PASS':'FAIL')+'</span><span>'+r.name+(r.ok?'':' <span class="d">— '+r.detail+'</span>')+'</span></div>'
+  const out = document.getElementById('out');
+  const tests = results.filter(r => !r.group);
+  const passed = tests.filter(r => r.ok).length, total = tests.length;
+  const sum = document.getElementById('summary');
+  sum.textContent = (passed === total ? '✓ 全部通过 ' : '✗ 有失败 ') + passed + ' / ' + total;
+  sum.className = passed === total ? 'ok' : 'fail';
+  out.innerHTML = results.map(r =>
+    r.group ? '<h2>' + r.group + '</h2>'
+    : '<div class="row ' + (r.ok ? 'pass' : 'err') + '"><span class="s">' + (r.ok ? 'PASS' : 'FAIL') + '</span><span>' + r.name + (r.ok ? '' : ' <span class="d">— ' + r.detail + '</span>') + '</span></div>'
   ).join('');
 }
 
-run().catch(e=>{
-  document.getElementById('summary').textContent='✗ 运行出错：'+e.message+(/subtle/.test(e.message||'')?'（请用 localhost/HTTPS 打开）':'');
-  document.getElementById('summary').className='fail';
+run().catch(e => {
+  render(); // 先渲染已完成的行，再覆盖 summary 为错误详情
+  document.getElementById('summary').textContent = '✗ 运行出错：' + e.message + (/subtle|fetch/i.test(e.message || '') ? '（请用 localhost/HTTPS 打开）' : '');
+  document.getElementById('summary').className = 'fail';
 });
 </script>
 </body>
