@@ -10,6 +10,12 @@
 
 **⚡ Dead-simple to deploy · 🆓 Free forever · 🧰 Zero maintenance**
 
+[![GitHub stars](https://img.shields.io/github/stars/zeropl/2FA?style=flat&logo=github&color=22d3ee&labelColor=06090c)](https://github.com/zeropl/2FA/stargazers)
+[![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee?labelColor=06090c)](LICENSE)
+[![Build: none](https://img.shields.io/badge/build-none-22d3ee?labelColor=06090c)](#deployment)
+[![Backend: none](https://img.shields.io/badge/backend-none-22d3ee?labelColor=06090c)](#how-it-works)
+[![Self-tests: 78](https://img.shields.io/badge/self--tests-78%20passing-22d3ee?labelColor=06090c)](tests.html)
+
 [简体中文](README.md) · English
 
 </div>
@@ -28,11 +34,43 @@ Prefer **GitHub Pages**, or want to fork first? See the detailed **[Deployment](
 
 ---
 
-## What is this?
+## Why yet another 2FA tool?
 
-Easy2FA turns a 2FA secret into its live 6-digit code, entirely in your browser. There's no server, no sign-up, and no database — each "account" is just a **bookmarkable URL** with the secret in its `#fragment` (which browsers never send over the network).
+Test accounts pile up — CI bots, staging back-offices, crawler accounts, that demo login the whole team shares — and nowadays every one of them demands 2FA. Stuff them into your phone's authenticator? They end up sandwiched between your bank codes, migrate painfully with every new phone, and "can I borrow that account?" means literally handing your phone over. Put them in a password manager? That's renting a bank vault for paper clips.
 
-At its core it's deliberately tiny and **stateless**: open a link, get a code, close it — nothing stored. Need to watch many accounts at once? The optional **multi-account board** keeps a local, one-click-clearable cache, with your own list file as the source of truth. Perfect for juggling **lots of throwaway / test-account 2FA secrets** without an app or sync.
+Easy2FA turns "an account" back into "a link":
+
+- **One bookmark = one account.** Open it — the code is already ticking.
+- **Send the link = handover done.** Your teammate opens it and reads the live code. Nothing to install.
+- **Drop a file = a wall of codes.** Drag your `.txt` list onto the page and every code renders in one live grid.
+
+No account system, no app, no sync — which also means no "new phone, everything's gone", no forgotten master password, no service shutting down. It's a **folder of static files**: host it anywhere, and it'll still run ten years from now.
+
+## Three things it refuses to compromise on
+
+2FA tools are everywhere. Easy2FA earns its place by taking three stances most tools can't be bothered with:
+
+### 1. The best storage is no storage
+
+Other tools promise to "store your secrets safely". Easy2FA's answer: **it doesn't store them at all.** No server (it's static files), no sign-up, nothing kept in the browser — your bookmarks and link files are the only source of truth.
+
+The one exception is the multi-account board, and even that is just a "recently opened"-style local cache: clear it in one click, restore it by re-dropping your file. It never takes custody. Backups, encryption, recovery, breach response — the whole chain of problems that comes with having state simply doesn't exist here.
+
+### 2. Secrets never leave — and the browser enforces it
+
+Anyone can claim "we don't upload your data". Easy2FA makes **the browser verify the claim**:
+
+- The secret lives in the URL's `#` fragment — the HTTP protocol itself **never** sends fragments with requests;
+- The page ships a **CSP (`connect-src 'self'`)** — even if a dependency were ever poisoned, the browser blocks any request to an external host on the spot;
+- React & friends are vendored into the repo, no CDN. Open the DevTools Network panel: every single request points at your own domain.
+
+### 3. Never confidently wrong
+
+For a 2FA tool, **calmly displaying a wrong code is worse than crashing** — you'll retry it until the account locks you out. So:
+
+- The algorithm is pinned by the official RFC 6238 test vectors, and the **78 self-tests in [`tests.html`](tests.html) execute the production code itself** — extracted straight out of `index.html`, so tests and implementation cannot drift;
+- Unsupported means refused: HOTP links are **rejected outright** (not silently computed as TOTP), and unknown algorithms / digit counts in migration QRs are **dropped** (not guessed at);
+- On load, it compares your device clock against the server's `Date` response header and **warns loudly** when it's ≥10s off. Clock skew is the most invisible way TOTP fails — and most tools stay silent about it.
 
 ## Why / when to use it
 
@@ -41,7 +79,7 @@ At its core it's deliberately tiny and **stateless**: open a link, get a code, c
 - 🤝 **Temporarily lend an account to a teammate / friend.** Send them the account's link; they open it and read the live code to sign in — without sharing your password-manager credentials or making them install an authenticator. *(The link carries the secret — share it over a trusted channel and rotate afterward.)*
 - ⚡ **One-off code.** Paste a secret on the home screen, read the code, close the tab. Stateless by design.
 - 📱 **Move a secret to your phone.** "Show QR" renders an `otpauth://` QR you can scan straight into Google Authenticator / Authy / any app.
-- 🖥️ **Show a code on a shared screen.** Append `&present=1` to any account link (or hit "🖥 演示模式") for a big, projector-friendly code with the QR and other controls hidden — screen-share or let someone read it without the secret QR ever appearing. *(On-screen protection only — the link still contains the secret and does not hide it from whoever you send it to.)*
+- 🖥️ **Show a code on a shared screen.** Append `&present=1` to any account link (or hit "🖥 Presentation") for a big, projector-friendly code with the QR and other controls hidden — screen-share or let someone read it without the secret QR ever appearing. *(On-screen protection only — the link still contains the secret and does not hide it from whoever you send it to.)*
 
 ## Features
 
@@ -50,7 +88,11 @@ At its core it's deliberately tiny and **stateless**: open a link, get a code, c
 - 🧮 **Multi-account board** — drop a file of links (or scan a Google Authenticator migration QR) → a color-coded grid of live codes; export back to a `.txt` list or a single board link
 - 📷 **QR import** (scan a QR image) & **QR export** (`otpauth://` for your phone)
 - 🖥️ **Presentation mode** (`&present=1`) — shows just the big rotating code with the QR / secret-revealing UI hidden, for projecting or screen-sharing; honest about what it does (and doesn't) protect
-- 📲 **PWA** — installable to your home screen, works fully offline
+- 🕰 **Clock check** — warns loudly when your device clock is skewed, instead of letting you hammer a wrong code
+- 🌐 **Bilingual UI** — one-tap 中/EN switch, auto-detected from your browser language (`?lang=` / localStorage override)
+- 🛡 **CSP-fenced** — `connect-src 'self'`: "secrets never leave" is enforced by the browser
+- 📲 **PWA** — installable to your home screen, works fully offline; deployed updates reach visitors automatically (stale-while-revalidate)
+- ♿ **Accessible** — fully keyboard-operable, respects reduced-motion, AA contrast
 - 🚫 **No backend, no server-side storage, no telemetry** — secrets never touch a server (the board's cache is local-only and clearable)
 - 🪶 **Tiny & portable** — static files + vendored React; deploys anywhere
 
@@ -62,6 +104,19 @@ At its core it's deliberately tiny and **stateless**: open a link, get a code, c
   <img src="assets/screenshot-qr.png" width="31%" alt="QR export" />
 </p>
 <p align="center"><sub>Live code &amp; countdown · Paste a secret → instant code + bookmark link · Export as <code>otpauth://</code> QR</sub></p>
+
+## How it compares
+
+|  | Phone authenticator | Password manager | **Easy2FA** |
+|---|---|---|---|
+| Best for | Your own important accounts | The team's real credentials | **Test / shared / throwaway accounts** |
+| New device | Migration ritual | Install + sign in | **Open a bookmark** |
+| Lend to a teammate | Hand over your phone | Invite them into the vault | **Send a link** |
+| Where the data lives | Phone + vendor cloud | Vendor's servers | **Your bookmarks / your files** |
+| Can you read all the code | Usually closed-source | Usually closed-source | **One HTML file** |
+| High-value accounts | ✅ Use these | ✅ Use these | ❌ **Don't. Really.** |
+
+The three columns aren't rivals — that last row is sincere: banks, primary email and production credentials belong with hardware keys or a dedicated authenticator. Easy2FA herds the big pile of small accounts they'd never bother with.
 
 ## Deployment
 
@@ -118,7 +173,7 @@ python3 -m http.server 8000
 
 For a real server use nginx / Caddy / Apache with a TLS certificate. Plain HTTP (non-localhost) or opening `index.html` via `file://` will **not** compute codes — Web Crypto refuses to run outside a secure context.
 
-> **Updating a deployed copy:** after you change any static file and redeploy, bump `CACHE` in [`sw.js`](sw.js) (e.g. `2fa-v5` → `2fa-v6`) so the service worker serves the new version instead of the cached one.
+> **Updating a deployed copy:** nothing to do. You push → the platform redeploys → visitors' service workers fetch the new version in the background, and their next refresh runs it. (The `CACHE` name in [`sw.js`](sw.js) now only matters when you want to wipe the old cache pool entirely.)
 
 ## How it works
 
@@ -127,6 +182,15 @@ For a real server use nginx / Caddy / Apache with a TLS certificate. Plain HTTP 
 - React / ReactDOM are **vendored** under `vendor/` (no CDN dependency → loads even on flaky networks, and is integrity-pinned).
 - The page ships a **CSP** (`connect-src 'self'`) — even if a dependency were ever compromised, the browser itself blocks any request to an external host. “Secrets never leave” is browser-enforced, not just a promise.
 - On load it **checks your clock** against the same-origin `Date` response header and warns loudly when it's ≥10s off — a skewed clock is the most common invisible way TOTP goes wrong.
+
+### Want to audit it? One afternoon is enough
+
+A tool that touches secrets deserves to be read before it's trusted. Easy2FA keeps that as easy as it gets:
+
+- All application logic lives in **one [`index.html`](index.html)** (~1,350 lines — UI templates and both languages included);
+- **No build step, no `node_modules`** — every line you read on GitHub is exactly what your browser executes;
+- The entire supply chain is three files under `vendor/`: React, ReactDOM (official UMD builds) and a QR library;
+- Open `/tests.html` on your own deployment and **run all 78 self-tests on the spot** — it fetches and tests the very `index.html` you're using.
 
 ## Security notes
 
@@ -138,6 +202,12 @@ Easy2FA is built for **test / throwaway accounts** and trades some security for 
 - Requires **HTTPS** (Web Crypto needs a secure context). `localhost` counts for local dev; `file://` does not.
 - The **multi-account board** stores its list in your browser's **localStorage** (a local cache — never synced anywhere by the app). Hit **Clear** to wipe it; your own file remains the real backup.
 - **Presentation mode** (`&present=1`) only guards against **on-screen** exposure of *your* session (shoulder-surfing / screen-share / recording) by hiding the QR. It does **not** protect the recipient of a link — the URL still contains the secret. It is not "secure sharing".
+
+## ⭐ If it saved you a trip to your phone
+
+Easy2FA has no cloud service, no Pro tier, and collects nothing — **stars are its entire revenue model**. If it ever spared you some authenticator-app archaeology, feed it one ⭐.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=zeropl/2FA&type=Date)](https://star-history.com/#zeropl/2FA&Date)
 
 ## Changelog
 
