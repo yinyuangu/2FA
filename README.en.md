@@ -125,6 +125,8 @@ For a real server use nginx / Caddy / Apache with a TLS certificate. Plain HTTP 
 - The 6-digit code is computed in-browser with `crypto.subtle` (HMAC) — standard RFC 6238 TOTP.
 - The secret is read from `location.hash`. **URL fragments are not included in HTTP requests**, so the secret never leaves your device over the network — even on a hosted deploy, the server only ever sees a request for a static file.
 - React / ReactDOM are **vendored** under `vendor/` (no CDN dependency → loads even on flaky networks, and is integrity-pinned).
+- The page ships a **CSP** (`connect-src 'self'`) — even if a dependency were ever compromised, the browser itself blocks any request to an external host. “Secrets never leave” is browser-enforced, not just a promise.
+- On load it **checks your clock** against the same-origin `Date` response header and warns loudly when it's ≥10s off — a skewed clock is the most common invisible way TOTP goes wrong.
 
 ## Security notes
 
@@ -139,6 +141,7 @@ Easy2FA is built for **test / throwaway accounts** and trades some security for 
 
 ## Changelog
 
+- **2026-07** — **Clock check + auto-update + CSP**: on load, the device clock is compared against the same-origin `Date` response header, with a loud warning when it's ≥10s off (closing the last “confidently wrong code” path); the service worker now uses **stale-while-revalidate**, so deployed updates reach visitors automatically — no more manual cache-version bumps; added a **CSP** (`connect-src 'self'`) that makes “secrets never leave” browser-enforced; `tests.html` was rebuilt to **extract the real implementation straight out of `index.html`** (zero mirror drift) with new parser-layer tests (78 checks). Same batch: fixed the stale `#secret=` hash after “Add to board”, iOS home-screen icon, a warning for over-long board links, and autocomplete off on secret inputs.
 - **2026-06** — **Bilingual UI + a hardening pass**: one-tap 中/EN switch (top-right), auto-detected from browser language / `?lang` / localStorage. Same batch: reject HOTP links and invalid/truncated bookmark links (no silently-wrong codes), accessibility (keyboard copy / reduced-motion / focus rings / AA contrast), lazy-loaded `qrcode.js`, plus a no-build `tests.html` (RFC 6238 self-test) and `PATCHES.md`.
 - **2026-06** — **Zero-config deploy**: shipped `wrangler.jsonc` / `netlify.toml` / `vercel.json` / `.nojekyll` and a fork-first deploy guide, so deploying to any platform is just "authorize → pick your fork → deploy" with no build settings. Corrected the Cloudflare button (it now creates a Worker with static assets, not Pages).
 - **2026-06** — **Presentation mode** (`&present=1`, optional `&nolabel=1`): a big, projector-friendly code with the QR and editing controls hidden, for screen-sharing without exposing the secret QR. Honest scope — it guards your screen, not the link's recipient.
