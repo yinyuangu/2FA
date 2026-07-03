@@ -35,7 +35,7 @@
 // ============================================================================
 const METHODS = [
   'base32Decode', 'base32Encode', 'totp', 'utf8', 'b64ToBytes',
-  'decodeMigration', 'decodeOtpParam', 'parseMigration',
+  'pbReaders', 'decodeMigration', 'decodeOtpParam', 'parseMigration',
   'clampDigits', 'clampPeriod', 'normAlgo',
   'parseInput', 'parseAccountUrl', 'parseAccountsFromText',
   'hashStr', 'pickColor', 'normalizeAccount',
@@ -194,6 +194,18 @@ async function run(){
   const mig = app.parseMigration('otpauth-migration://offline?data=' + b64url(payload));
   check('parseMigration 全链路解出 1 个', mig.length === 1 && mig[0].secret === 'JBSWY3DPEHPK3PXP');
   check('parseMigration 坏 data → []', app.parseMigration('otpauth-migration://offline?data=%%%').length === 0);
+  // ---- 损坏/截断的迁移码：干净失败，不产出垃圾账号（issue #4）----
+  const truncated = payload.subarray(0, payload.length - 6); // 掐掉尾部：内层长度前缀声明的字节不够
+  check('截断的迁移码 → []（不产出垃圾账号）', app.decodeMigration(truncated).length === 0, 'got ' + app.decodeMigration(truncated).length);
+  const lyingLen = new Uint8Array([0x0A, 0x7F, ...otp]); // 外层长度前缀谎报 127 字节
+  check('长度前缀越界 → []', app.decodeMigration(lyingLen).length === 0);
+  const badVarint = new Uint8Array([0x0A, 0x03, 0x0A, 0xFF]); // varint 最高位悬空直到 EOF
+  check('未终结的 varint → []', app.decodeMigration(badVarint).length === 0);
+  // 同包一好一坏：坏的丢弃，好的保留
+  const goodPlusBad = new Uint8Array([...pbField(0x0A, otp), ...pbField(0x0A, [0x0A, 0x50])]);
+  const gpb = app.decodeMigration(goodPlusBad);
+  check('一好一坏 → 只留好的 1 个', gpb.length === 1 && gpb[0].secret === 'JBSWY3DPEHPK3PXP', 'got ' + gpb.length);
+  check('parseMigration 截断全链路 → []', app.parseMigration('otpauth-migration://offline?data=' + b64url(truncated)).length === 0);
 
   // ---- normalizeAccount ----
   group('normalizeAccount');

@@ -998,32 +998,54 @@ class Component extends DCLogic {
       return out;
     } catch (e) { return null; }
   }
+  // protobuf 读取原语：截断/长度越界一律抛错，由调用方决定丢弃单条还是整包
+  pbReaders(buf) {
+    let pos = 0;
+    const varint = () => {
+      let r = 0, sh = 0, b;
+      do { if (pos >= buf.length) throw new Error('varint out of bounds'); b = buf[pos++]; r += (b & 0x7f) * Math.pow(2, sh); sh += 7; } while (b & 0x80);
+      return r;
+    };
+    const len = () => { const l = varint(); if (pos + l > buf.length) throw new Error('length out of bounds'); return l; };
+    const skip = (w) => {
+      if (w === 0) varint();
+      else if (w === 2) { const l = len(); pos += l; }
+      else if (w === 5) pos += 4;
+      else if (w === 1) pos += 8;
+      else throw new Error('unsupported wire type');
+      if (pos > buf.length) throw new Error('skip out of bounds');
+    };
+    return { varint, len, skip, tell: () => pos, seek: (p) => { pos = p; } };
+  }
   decodeMigration(buf) {
     const accounts = [];
-    let pos = 0;
-    const varint = () => { let r = 0, sh = 0, b; do { b = buf[pos++]; r += (b & 0x7f) * Math.pow(2, sh); sh += 7; } while (b & 0x80); return r; };
-    const skip = (w) => { if (w === 0) { while (buf[pos] & 0x80) pos++; pos++; } else if (w === 2) { const l = varint(); pos += l; } else if (w === 5) pos += 4; else if (w === 1) pos += 8; };
-    while (pos < buf.length) {
-      const tag = varint(); const field = tag >>> 3, wire = tag & 7;
-      if (field === 1 && wire === 2) { const len = varint(); const sub = buf.subarray(pos, pos + len); pos += len; const a = this.decodeOtpParam(sub); if (a) accounts.push(a); }
-      else skip(wire);
-    }
+    const r = this.pbReaders(buf);
+    try {
+      while (r.tell() < buf.length) {
+        const tag = r.varint(); const field = tag >>> 3, wire = tag & 7;
+        if (field === 1 && wire === 2) {
+          const l = r.len(); const sub = buf.subarray(r.tell(), r.tell() + l); r.seek(r.tell() + l);
+          // 单条损坏只丢弃该条，不影响同包其他账号
+          let a = null; try { a = this.decodeOtpParam(sub); } catch (e) {}
+          if (a) accounts.push(a);
+        }
+        else r.skip(wire);
+      }
+    } catch (e) { /* 外层截断：保留截断点之前已解析出的账号 */ }
     return accounts;
   }
   decodeOtpParam(buf) {
-    let pos = 0;
-    const varint = () => { let r = 0, sh = 0, b; do { b = buf[pos++]; r += (b & 0x7f) * Math.pow(2, sh); sh += 7; } while (b & 0x80); return r; };
-    const skip = (w) => { if (w === 0) { while (buf[pos] & 0x80) pos++; pos++; } else if (w === 2) { const l = varint(); pos += l; } else if (w === 5) pos += 4; else if (w === 1) pos += 8; };
+    const r = this.pbReaders(buf);
     let secretBytes = null, name = '', issuer = '', algo = 1, digitsEnum = 1, type = 2;
-    while (pos < buf.length) {
-      const tag = varint(); const field = tag >>> 3, wire = tag & 7;
-      if (field === 1 && wire === 2) { const l = varint(); secretBytes = buf.subarray(pos, pos + l); pos += l; }
-      else if (field === 2 && wire === 2) { const l = varint(); name = this.utf8(buf.subarray(pos, pos + l)); pos += l; }
-      else if (field === 3 && wire === 2) { const l = varint(); issuer = this.utf8(buf.subarray(pos, pos + l)); pos += l; }
-      else if (field === 4 && wire === 0) algo = varint();
-      else if (field === 5 && wire === 0) digitsEnum = varint();
-      else if (field === 6 && wire === 0) type = varint();
-      else skip(wire);
+    while (r.tell() < buf.length) {
+      const tag = r.varint(); const field = tag >>> 3, wire = tag & 7;
+      if (field === 1 && wire === 2) { const l = r.len(); secretBytes = buf.subarray(r.tell(), r.tell() + l); r.seek(r.tell() + l); }
+      else if (field === 2 && wire === 2) { const l = r.len(); name = this.utf8(buf.subarray(r.tell(), r.tell() + l)); r.seek(r.tell() + l); }
+      else if (field === 3 && wire === 2) { const l = r.len(); issuer = this.utf8(buf.subarray(r.tell(), r.tell() + l)); r.seek(r.tell() + l); }
+      else if (field === 4 && wire === 0) algo = r.varint();
+      else if (field === 5 && wire === 0) digitsEnum = r.varint();
+      else if (field === 6 && wire === 0) type = r.varint();
+      else r.skip(wire);
     }
     if (!secretBytes || !secretBytes.length) return null;
     if (type === 1) return null; // 跳过 HOTP（基于计数器，本工具只算 TOTP）
