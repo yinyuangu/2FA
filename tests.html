@@ -38,6 +38,7 @@ const METHODS = [
   'pbReaders', 'decodeMigration', 'decodeOtpParam', 'parseMigration',
   'clampDigits', 'clampPeriod', 'normAlgo',
   'parseInput', 'parseAccountUrl', 'parseAccountsFromText',
+  'parseStructured', 'accountFromRecord', 'csvSplit',
   'hashStr', 'pickColor', 'normalizeAccount',
   'encodeBoardParam', 'decodeBoardParam', 'buildAccountUrl', 'fmtCode',
 ];
@@ -173,6 +174,43 @@ async function run(){
   check('第 3 条：裸 secret= 行', accs[2] && accs[2].label === 'BareLine' && accs[2].secret === 'MFRGGZDFMZTWQ2LK');
   check('空文本 → []', app.parseAccountsFromText('').length === 0);
   check('纯噪声 → []', app.parseAccountsFromText('nothing to see\nhere').length === 0);
+
+  // ---- JSON / CSV 结构化导入（issue #5：picker 的 .json/.csv 现在真能解析）----
+  group('parseStructured · JSON/CSV');
+  // JSON：数组 of 对象
+  const jArr = app.parseAccountsFromText('[{"secret":"JBSWY3DPEHPK3PXP","label":"acme","issuer":"Acme"}]');
+  check('JSON 数组解出 1 个', jArr.length === 1, 'got ' + jArr.length);
+  check('JSON label=acme / issuer=Acme', jArr[0] && jArr[0].label === 'acme' && jArr[0].issuer === 'Acme');
+  check('JSON secret 归一大写', jArr[0] && jArr[0].secret === 'JBSWY3DPEHPK3PXP');
+  // JSON：单对象 + 字段别名（name→label, service→issuer, timer→period, algo）
+  const jObj = app.parseAccountsFromText('{"secret":"gezdgnbvgy3tqojq","name":"bob","service":"GitHub","digits":8,"timer":60,"algo":"SHA256"}');
+  check('JSON 单对象 + 别名解出 1 个', jObj.length === 1, 'got ' + jObj.length);
+  check('JSON 别名映射（label/issuer/digits/period/algo）',
+    jObj[0] && jObj[0].label === 'bob' && jObj[0].issuer === 'GitHub' && jObj[0].digits === 8 && jObj[0].period === 60 && jObj[0].algorithm === 'SHA-256');
+  // JSON：{accounts:[...]} 包一层
+  const jWrap = app.parseAccountsFromText('{"accounts":[{"secret":"JBSWY3DPEHPK3PXP"},{"secret":"GEZDGNBVGY3TQOJQ"}]}');
+  check('JSON 包一层 {accounts:[...]} 解出 2 个', jWrap.length === 2, 'got ' + jWrap.length);
+  // JSON：坏 secret 的记录被丢弃
+  const jBad = app.parseAccountsFromText('[{"secret":"JBSWY3DPEHPK3PXP"},{"secret":"not-base32!!!"},{"label":"缺secret"}]');
+  check('JSON 非法/缺 secret 记录被丢弃（只留 1）', jBad.length === 1, 'got ' + jBad.length);
+  // JSON：数组里混 otpauth 字符串——由上层 URL 正则捡走，仍能出账号
+  const jStr = app.parseAccountsFromText('["otpauth://totp/Acme:bob?secret=JBSWY3DPEHPK3PXP&issuer=Acme"]');
+  check('JSON 数组里的 otpauth 字符串仍被解析', jStr.length === 1 && jStr[0].secret === 'JBSWY3DPEHPK3PXP');
+  // CSV：带表头
+  const csv = app.parseAccountsFromText('secret,label,issuer\nJBSWY3DPEHPK3PXP,acme,Acme\nGEZDGNBVGY3TQOJQ,bob,GitHub');
+  check('CSV 表头 + 2 行解出 2 个', csv.length === 2, 'got ' + csv.length);
+  check('CSV 首行字段（secret/label/issuer）', csv[0] && csv[0].secret === 'JBSWY3DPEHPK3PXP' && csv[0].label === 'acme' && csv[0].issuer === 'Acme');
+  // CSV：列序打乱 + 引号内含逗号
+  const csv2 = app.parseAccountsFromText('issuer,secret,label\n"Acme, Inc.",JBSWY3DPEHPK3PXP,work');
+  check('CSV 乱序列 + 引号内逗号', csv2.length === 1 && csv2[0].issuer === 'Acme, Inc.' && csv2[0].label === 'work');
+  // CSV：分号分隔（欧洲 Excel）
+  const csvSemi = app.parseAccountsFromText('secret;label\nJBSWY3DPEHPK3PXP;acme');
+  check('CSV 分号分隔', csvSemi.length === 1 && csvSemi[0].label === 'acme');
+  // 无 secret 列头的逗号文本 → 不当 CSV（交回 URL 抠取，此处应为 0）
+  check('无 secret 列头的普通逗号行 → 不误判为 CSV', app.parseAccountsFromText('hello, world, foo\nbar, baz, qux').length === 0);
+  // 坏 JSON（YAML 冒号行）不抛错、不误伤：无 URL/secret= 故为 []
+  check('坏 JSON 不抛错 → []', app.parseAccountsFromText('- secret: JBSWY3DPEHPK3PXP\n  label: x').length === 0);
+  check('csvSplit 引号转义 ""', JSON.stringify(app.csvSplit('a,"b""c",d', ',')) === JSON.stringify(['a','b"c','d']));
 
   // ---- Google Authenticator 迁移码（protobuf）----
   group('迁移码');

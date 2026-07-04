@@ -211,6 +211,7 @@ Easy2FA 没有云服务、没有 Pro 版、不收集任何数据——**star 是
 
 ## 更新记录
 
+- **2026-07** — **导入真读 JSON / CSV**：文件选择器一直声称支持 `.csv` / `.json`，但解析器只会抠 URL、真拿一份 JSON / CSV 导出反而「未识别到账号」（[issue #5](https://github.com/zeropl/2FA/issues/5)）。现补齐结构化解析——JSON 支持数组 / 单对象 / 外层包一层数组，键名大小写不敏感并容忍常见别名（`name`/`account`→标签、`service`→发行方、`timer`→周期、`algo`→算法）；CSV 认 `secret` 列头、支持逗号 / 分号 / 制表符与引号内逗号，非 `secret` 表头的普通逗号文本不会被误判。补 15 项解析测试（共 98 项）。
 - **2026-07** — **时钟校验 + 自动更新 + CSP**：加载时用同源 `Date` 响应头对表，设备时钟偏差 ≥10 秒明确警告「码可能无效」（消掉最后一条「自信错码」路径）；Service Worker 改 **stale-while-revalidate**，部署新版后访客自动跟进，不再依赖手动升缓存版本号；加 **CSP**（`connect-src 'self'`）把「密钥不出网」变成浏览器强制；`tests.html` 重构为**直接从 `index.html` 提取真实实现**执行（零镜像漂移），并补齐解析层测试（78 项）。同批：修复「加入看板」后刷新跳回单号的 hash 残留、iOS 主屏图标、超长看板链接提醒、密钥输入框关闭自动填充。
 - **2026-06** — **界面中英双语 + 一批硬化**：右上角一键切换中/EN（按浏览器语言 / `?lang` / localStorage 自动选择）。同批：拒绝 HOTP 链接和无效/截断书签链接的"算错码"路径、可访问性（键盘复制 / 减少动态 / 焦点环 / AA 对比度）、`qrcode.js` 延迟加载，新增 `tests.html`（RFC 6238 自测）与 `PATCHES.md`。
 - **2026-06** — **零配置部署**：补齐 `wrangler.jsonc` / `netlify.toml` / `vercel.json` / `.nojekyll` 和 fork 优先的部署教程，到任意平台都是"授权 → 选你的 fork → 部署"，没有构建项要填。并更正了 Cloudflare 按钮（它现在创建的是带静态资源的 Worker，不是 Pages）。
