@@ -14,7 +14,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee?labelColor=06090c)](LICENSE)
 [![Build: none](https://img.shields.io/badge/build-none-22d3ee?labelColor=06090c)](#deployment)
 [![Backend: none](https://img.shields.io/badge/backend-none-22d3ee?labelColor=06090c)](#how-it-works)
-[![Self-tests: 78](https://img.shields.io/badge/self--tests-78%20passing-22d3ee?labelColor=06090c)](tests.html)
+[![Self-tests: 98](https://img.shields.io/badge/self--tests-98%20passing-22d3ee?labelColor=06090c)](tests.html)
+[![CI](https://github.com/zeropl/2FA/actions/workflows/tests.yml/badge.svg)](https://github.com/zeropl/2FA/actions/workflows/tests.yml)
 
 [简体中文](README.md) · English
 
@@ -68,7 +69,7 @@ Anyone can claim "we don't upload your data". Easy2FA makes **the browser verify
 
 For a 2FA tool, **calmly displaying a wrong code is worse than crashing** — you'll retry it until the account locks you out. So:
 
-- The algorithm is pinned by the official RFC 6238 test vectors, and the **78 self-tests in [`tests.html`](tests.html) execute the production code itself** — extracted straight out of `index.html`, so tests and implementation cannot drift;
+- The algorithm is pinned by the official RFC 6238 test vectors, and the **98 self-tests in [`tests.html`](tests.html) execute the production code itself** — extracted straight out of `index.html`, so tests and implementation cannot drift, and CI runs them headlessly on every push;
 - Unsupported means refused: HOTP links are **rejected outright** (not silently computed as TOTP), and unknown algorithms / digit counts in migration QRs are **dropped** (not guessed at);
 - On load, it compares your device clock against the server's `Date` response header and **warns loudly** when it's ≥10s off. Clock skew is the most invisible way TOTP fails — and most tools stay silent about it.
 
@@ -187,10 +188,10 @@ For a real server use nginx / Caddy / Apache with a TLS certificate. Plain HTTP 
 
 A tool that touches secrets deserves to be read before it's trusted. Easy2FA keeps that as easy as it gets:
 
-- All application logic lives in **one [`index.html`](index.html)** (~1,350 lines — UI templates and both languages included);
+- All application logic lives in **one [`index.html`](index.html)** (~1,500 lines — UI templates and both languages included);
 - **No build step, no `node_modules`** — every line you read on GitHub is exactly what your browser executes;
-- The entire supply chain is three files under `vendor/`: React, ReactDOM (official UMD builds) and a QR library;
-- Open `/tests.html` on your own deployment and **run all 78 self-tests on the spot** — it fetches and tests the very `index.html` you're using.
+- The entire supply chain is four files under `vendor/`: React, ReactDOM (official UMD builds) and two QR libraries (qrcode.js to generate, jsQR as the decode fallback);
+- Open `/tests.html` on your own deployment and **run all 98 self-tests on the spot** — it fetches and tests the very `index.html` you're using.
 
 ## Security notes
 
@@ -211,6 +212,7 @@ Easy2FA has no cloud service, no Pro tier, and collects nothing — **stars are 
 
 ## Changelog
 
+- **2026-07** — **Per-card board actions + QR scanning in every browser + CI**: every board card now has **↗ open single view / 🔗 copy account link / ✕ remove** (two-step confirm) — no more “clear everything to delete one account”, and each card can now reach the single-view QR export; QR scanning no longer requires Chromium's `BarcodeDetector` — a vendored **jsQR** fallback (lazy-loaded, same-origin, SW-precached for offline) makes scanning work in **Safari / Firefox too** (incl. GA migration codes), and also retries when the native engine misses; new **GitHub Actions CI** runs all 98 `tests.html` self-tests headlessly on every push and verifies the `support.js` vendor patch is intact (see PATCHES.md).
 - **2026-07** — **Import now actually reads JSON / CSV**: the file picker had always advertised `.csv` / `.json`, but the parser only scraped URLs — feed it a real JSON / CSV export and you got “no accounts recognized” ([issue #5](https://github.com/zeropl/2FA/issues/5)). Structured parsing is now real — JSON accepts an array / a single object / a one-level array wrapper, with case-insensitive keys and common aliases (`name`/`account`→label, `service`→issuer, `timer`→period, `algo`→algorithm); CSV keys off a `secret` header column and handles comma / semicolon / tab delimiters plus quoted commas, while ordinary comma text without a `secret` header is not mistaken for a table. 15 new parser tests (98 total).
 - **2026-07** — **Clock check + auto-update + CSP**: on load, the device clock is compared against the same-origin `Date` response header, with a loud warning when it's ≥10s off (closing the last “confidently wrong code” path); the service worker now uses **stale-while-revalidate**, so deployed updates reach visitors automatically — no more manual cache-version bumps; added a **CSP** (`connect-src 'self'`) that makes “secrets never leave” browser-enforced; `tests.html` was rebuilt to **extract the real implementation straight out of `index.html`** (zero mirror drift) with new parser-layer tests (78 checks). Same batch: fixed the stale `#secret=` hash after “Add to board”, iOS home-screen icon, a warning for over-long board links, and autocomplete off on secret inputs.
 - **2026-06** — **Bilingual UI + a hardening pass**: one-tap 中/EN switch (top-right), auto-detected from browser language / `?lang` / localStorage. Same batch: reject HOTP links and invalid/truncated bookmark links (no silently-wrong codes), accessibility (keyboard copy / reduced-motion / focus rings / AA contrast), lazy-loaded `qrcode.js`, plus a no-build `tests.html` (RFC 6238 self-test) and `PATCHES.md`.

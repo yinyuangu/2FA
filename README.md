@@ -14,7 +14,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee?labelColor=06090c)](LICENSE)
 [![Build: none](https://img.shields.io/badge/build-none-22d3ee?labelColor=06090c)](#部署说明)
 [![Backend: none](https://img.shields.io/badge/backend-none-22d3ee?labelColor=06090c)](#工作原理)
-[![Self-tests: 78](https://img.shields.io/badge/self--tests-78%20passing-22d3ee?labelColor=06090c)](tests.html)
+[![Self-tests: 98](https://img.shields.io/badge/self--tests-98%20passing-22d3ee?labelColor=06090c)](tests.html)
+[![CI](https://github.com/zeropl/2FA/actions/workflows/tests.yml/badge.svg)](https://github.com/zeropl/2FA/actions/workflows/tests.yml)
 
 简体中文 · [English](README.en.md)
 
@@ -68,7 +69,7 @@ Easy2FA 把「账号」变回「链接」：
 
 对 2FA 工具来说，**「淡定地显示一个错码」比崩溃更恶劣**——你会拿着错码反复重试，直到把账号锁死。所以：
 
-- 算法用 RFC 6238 官方测试向量锁死；[`tests.html`](tests.html) 的 **78 项自测直接提取生产代码执行**——测的就是线上跑的那份，测试与实现不可能漂移；
+- 算法用 RFC 6238 官方测试向量锁死；[`tests.html`](tests.html) 的 **98 项自测直接提取生产代码执行**——测的就是线上跑的那份，测试与实现不可能漂移，且每次 push 由 CI 无头跑一遍；
 - 不支持就明说：HOTP 链接**直接拒绝**（而不是按 TOTP 硬算一个错的），迁移码里未知的算法 / 位数**直接丢弃**（而不是猜个默认值）；
 - 打开页面会和服务器的 `Date` 响应头**对表**：设备时钟偏差 ≥10 秒就在页面顶端警告「验证码可能无效」。时钟不准是 TOTP 最隐蔽的翻车方式，大多数工具对此保持沉默。
 
@@ -187,10 +188,10 @@ python3 -m http.server 8000
 
 碰密钥的工具，值得你先读一遍代码再信任。Easy2FA 把这件事做得尽量容易：
 
-- 全部应用逻辑在**一个 [`index.html`](index.html)** 里（约 1350 行，界面模板和中英文案都算上）；
+- 全部应用逻辑在**一个 [`index.html`](index.html)** 里（约 1500 行，界面模板和中英文案都算上）；
 - **没有构建步骤、没有 `node_modules`**——你在 GitHub 上读到的每一行，就是浏览器里执行的每一行；
-- 整条供应链只有 `vendor/` 下三个文件：React、ReactDOM（官方 UMD 构建）和一个二维码库；
-- 在你的部署上打开 `/tests.html`，**当场跑 78 项自测**——它 fetch 并测试的，正是你此刻在用的那份 `index.html`。
+- 整条供应链只有 `vendor/` 下四个文件：React、ReactDOM（官方 UMD 构建）和两个二维码库（生成用 qrcode.js，识别兜底用 jsQR）；
+- 在你的部署上打开 `/tests.html`，**当场跑 98 项自测**——它 fetch 并测试的，正是你此刻在用的那份 `index.html`。
 
 ## 安全须知
 
@@ -211,6 +212,7 @@ Easy2FA 没有云服务、没有 Pro 版、不收集任何数据——**star 是
 
 ## 更新记录
 
+- **2026-07** — **看板单卡操作 + 全浏览器扫码 + CI**：看板每张卡新增 **↗ 打开单号 / 🔗 复制该号链接 / ✕ 移除**（两步确认）——不再「删一个号只能全清重导」，单号页的二维码导出也由此对每张卡可达；扫码不再依赖 Chromium 独有的 `BarcodeDetector`——vendored **jsQR** 兜底（懒加载、同源、SW 预缓存离线可用），**Safari / Firefox 也能扫**（含 GA 迁移码），原生引擎没认出来时同样落 jsQR 再试；新增 **GitHub Actions CI**：每次 push 无头跑 `tests.html` 的 98 项自测，并校验 `support.js` 的 vendor 补丁未丢（见 PATCHES.md）。
 - **2026-07** — **导入真读 JSON / CSV**：文件选择器一直声称支持 `.csv` / `.json`，但解析器只会抠 URL、真拿一份 JSON / CSV 导出反而「未识别到账号」（[issue #5](https://github.com/zeropl/2FA/issues/5)）。现补齐结构化解析——JSON 支持数组 / 单对象 / 外层包一层数组，键名大小写不敏感并容忍常见别名（`name`/`account`→标签、`service`→发行方、`timer`→周期、`algo`→算法）；CSV 认 `secret` 列头、支持逗号 / 分号 / 制表符与引号内逗号，非 `secret` 表头的普通逗号文本不会被误判。补 15 项解析测试（共 98 项）。
 - **2026-07** — **时钟校验 + 自动更新 + CSP**：加载时用同源 `Date` 响应头对表，设备时钟偏差 ≥10 秒明确警告「码可能无效」（消掉最后一条「自信错码」路径）；Service Worker 改 **stale-while-revalidate**，部署新版后访客自动跟进，不再依赖手动升缓存版本号；加 **CSP**（`connect-src 'self'`）把「密钥不出网」变成浏览器强制；`tests.html` 重构为**直接从 `index.html` 提取真实实现**执行（零镜像漂移），并补齐解析层测试（78 项）。同批：修复「加入看板」后刷新跳回单号的 hash 残留、iOS 主屏图标、超长看板链接提醒、密钥输入框关闭自动填充。
 - **2026-06** — **界面中英双语 + 一批硬化**：右上角一键切换中/EN（按浏览器语言 / `?lang` / localStorage 自动选择）。同批：拒绝 HOTP 链接和无效/截断书签链接的"算错码"路径、可访问性（键盘复制 / 减少动态 / 焦点环 / AA 对比度）、`qrcode.js` 延迟加载，新增 `tests.html`（RFC 6238 自测）与 `PATCHES.md`。
