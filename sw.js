@@ -11,6 +11,7 @@ const CORE = [
   './vendor/react.production.min.js',
   './vendor/react-dom.production.min.js',
   './vendor/qrcode.js',
+  './vendor/jsqr.js', // 扫码兜底引擎（Safari/Firefox 没有 BarcodeDetector）——预缓存保住离线扫码
 ];
 
 self.addEventListener('install', (e) => {

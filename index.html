@@ -381,7 +381,7 @@ const STR = {
     clockSkewWarn: (s) => '⚠ 设备时钟偏差约 ' + s + ' 秒——验证码可能无效，请校准系统时间',
     fileTooBig: '文件过大（>2MB），请确认是账号链接列表', fileSkipBig: '跳过过大文件（>2MB）', readFileFail: '读取文件失败', readFail: '读取失败', downloadFail: '下载失败',
     clipboardNo: '此浏览器不支持读取剪贴板，请手动粘贴', clipboardFail: '读取剪贴板失败（可能需要授权）', clipboardNoLinks: '剪贴板中未识别到账号链接',
-    scanNo: '此浏览器不支持扫码，请粘贴链接导入', scanNoAccount: '二维码中未识别到账号', scanNoSupport: '此浏览器不支持扫码，请直接粘贴 otpauth:// 链接',
+    scanNoAccount: '二维码中未识别到账号', scanNoSupport: '扫码组件加载失败（离线且未缓存？），请直接粘贴 otpauth:// 链接',
     qrImported: '已从二维码导入 ✓', qrNotFound: '未识别到二维码', qrFail: '二维码解析失败', qrUnavailable: '二维码不可用', qrGenFail: '二维码生成失败',
     errInvalid: '密钥无效：只能含 A–Z 和 2–7（base32）', errHotp: '暂不支持 HOTP（基于计数器）链接，本工具只算 TOTP', errNoSecret: 'otpauth 链接里没有有效的 secret', errBookmarkBad: '链接里的密钥无效或被截断，请检查后重新粘贴',
     titleApp: '2FA', titleBoard: '多号看板 · 2FA', titleSuffix: ' · 2FA',
@@ -421,7 +421,7 @@ const STR = {
     clockSkewWarn: (s) => '⚠ Device clock is ~' + s + 's off — codes may be invalid. Please fix your system time.',
     fileTooBig: 'File too large (>2MB) — is it a list of account links?', fileSkipBig: 'Skipped an oversized file (>2MB)', readFileFail: 'Failed to read the file', readFail: 'Read failed', downloadFail: 'Download failed',
     clipboardNo: 'This browser can’t read the clipboard — paste manually', clipboardFail: 'Clipboard read failed (permission needed?)', clipboardNoLinks: 'No account links in the clipboard',
-    scanNo: 'This browser can’t scan QR — paste a link to import', scanNoAccount: 'No account found in the QR', scanNoSupport: 'This browser can’t scan QR — paste the otpauth:// link directly',
+    scanNoAccount: 'No account found in the QR', scanNoSupport: 'QR decoder failed to load (offline and not cached?) — paste the otpauth:// link directly',
     qrImported: 'Imported from QR ✓', qrNotFound: 'No QR detected', qrFail: 'Failed to parse the QR', qrUnavailable: 'QR unavailable', qrGenFail: 'Failed to generate the QR',
     errInvalid: 'Invalid secret: only A–Z and 2–7 (base32) allowed', errHotp: 'HOTP (counter-based) links aren’t supported — this tool only does TOTP', errNoSecret: 'No valid secret in the otpauth link', errBookmarkBad: 'The secret in the link is invalid or truncated — check and paste again',
     titleApp: '2FA', titleBoard: 'Board · 2FA', titleSuffix: ' · 2FA',
@@ -754,26 +754,63 @@ class Component extends DCLogic {
 
   onLabel(v) { this.setState({ inputLabel: v }); }
 
+  // ---------- QR 扫码识别（双引擎） ----------
+  // 原生 BarcodeDetector 只有 Chromium 系有——此前 Safari / Firefox 一律「不支持扫码」。
+  // 现以 vendor 的 jsQR 兜底：懒加载（不扫码不花这 250KB）、同源（CSP script-src 'self' 放行）、离线可用（SW 预缓存）。
+  loadJsQR() {
+    if (typeof jsQR !== 'undefined') return Promise.resolve();
+    if (!this._jsqrP) {
+      this._jsqrP = new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = './vendor/jsqr.js';
+        s.onload = () => res();
+        s.onerror = () => { this._jsqrP = null; rej(new Error('jsqr-unavailable')); };
+        document.head.appendChild(s);
+      });
+    }
+    return this._jsqrP;
+  }
+  // 返回二维码文本；识别不到返回 null；解码引擎不可用才抛错
+  async detectQr(file) {
+    const bitmap = await createImageBitmap(file);
+    if ('BarcodeDetector' in window) {
+      try {
+        const det = new BarcodeDetector({ formats: ['qr_code'] });
+        const codes = await det.detect(bitmap);
+        if (codes && codes[0] && codes[0].rawValue) return codes[0].rawValue;
+        // 原生引擎没认出来也落到 jsQR 再试——部分平台的实现偏弱
+      } catch (e) {}
+    }
+    await this.loadJsQR();
+    const cv = document.createElement('canvas');
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    // 大图先缩到 1600px 内识别（快）；失败再试原尺寸——GA 迁移码很密，缩太狠会糊掉
+    for (const max of [1600, 4096]) {
+      const sc = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+      const w = Math.max(1, Math.round(bitmap.width * sc)), h = Math.max(1, Math.round(bitmap.height * sc));
+      cv.width = w; cv.height = h;
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      const d = ctx.getImageData(0, 0, w, h);
+      const hit = jsQR(d.data, w, h);
+      if (hit && hit.data) return hit.data;
+      if (sc === 1) break; // 已是原尺寸，无需重试
+    }
+    return null;
+  }
+
   // ---------- QR 扫码导入 ----------
   async scanImport() {
-    if (!('BarcodeDetector' in window)) {
-      this.setState({ importMsg: this.t().scanNoSupport });
-      return;
-    }
     const inp = document.createElement('input');
     inp.type = 'file'; inp.accept = 'image/*';
     inp.onchange = async () => {
       const file = inp.files && inp.files[0];
       if (!file) return;
       try {
-        const bitmap = await createImageBitmap(file);
-        const det = new BarcodeDetector({ formats: ['qr_code'] });
-        const codes = await det.detect(bitmap);
-        const val = codes && codes[0] && codes[0].rawValue;
+        const val = await this.detectQr(file);
         if (val && /^otpauth:\/\//i.test(val)) { this.onInput(val); this.setState({ importMsg: this.t().qrImported }); }
         else if (val) { this.onInput(val); }
         else this.setState({ importMsg: this.t().qrNotFound });
-      } catch (e) { this.setState({ importMsg: this.t().qrFail }); }
+      } catch (e) { this.setState({ importMsg: (e && e.message === 'jsqr-unavailable') ? this.t().scanNoSupport : this.t().qrFail }); }
     };
     inp.click();
   }
@@ -1287,12 +1324,8 @@ class Component extends DCLogic {
     } catch (e) { this.setState({ boardMsg: this.t().readFail }); }
   }
   async scanFile(file) {
-    if (!('BarcodeDetector' in window)) return [];
     try {
-      const bitmap = await createImageBitmap(file);
-      const det = new BarcodeDetector({ formats: ['qr_code'] });
-      const codes = await det.detect(bitmap);
-      const val = codes && codes[0] && codes[0].rawValue;
+      const val = await this.detectQr(file);
       if (!val) return [];
       if (/^otpauth-migration:\/\//i.test(val)) return this.parseMigration(val);
       if (/^otpauth:\/\//i.test(val)) { const a = this.parseInput(val); return (a && a.valid) ? [a] : []; }
@@ -1300,7 +1333,6 @@ class Component extends DCLogic {
     } catch (e) { return []; }
   }
   scanImportBoard() {
-    if (!('BarcodeDetector' in window)) { this.setState({ boardMsg: this.t().scanNo }); return; }
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
     inp.onchange = async () => {
       const file = inp.files && inp.files[0]; if (!file) return;
