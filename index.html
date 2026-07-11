@@ -320,6 +320,11 @@
                   <div style="font-family:var(--font-sans);font-size:13px;font-weight:600;color:#eaf2f5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.label }}</div>
                   <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:rgba(234,242,245,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.sub }}</div>
                 </div>
+                <div style="display:flex;gap:2px;flex:none;">
+                  <button onClick="{{ card.onOpen }}" title="{{ t.cardOpenTitle }}" aria-label="{{ t.cardOpenTitle }}" style="width:24px;height:24px;border:none;border-radius:6px;background:transparent;color:rgba(234,242,245,.45);font-family:var(--font-mono);font-size:13px;line-height:1;padding:0;cursor:pointer;" style-hover="background:rgba(255,255,255,.09);color:var(--accent,#22d3ee);">↗</button>
+                  <button onClick="{{ card.onCopyLink }}" title="{{ t.cardLinkTitle }}" aria-label="{{ t.cardLinkTitle }}" style="width:24px;height:24px;border:none;border-radius:6px;background:transparent;color:rgba(234,242,245,.45);font-size:11px;line-height:1;padding:0;cursor:pointer;" style-hover="background:rgba(255,255,255,.09);color:var(--accent,#22d3ee);">🔗</button>
+                  <button onClick="{{ card.onRemove }}" title="{{ card.removeTitle }}" aria-label="{{ card.removeTitle }}" style="width:24px;height:24px;border:none;border-radius:6px;background:{{ card.removeBg }};color:{{ card.removeColor }};font-family:var(--font-mono);font-size:13px;line-height:1;padding:0;cursor:pointer;" style-hover="background:rgba(251,113,133,.16);color:#fb7185;">✕</button>
+                </div>
               </div>
               <div style="font-family:var(--font-mono);font-size:29px;font-weight:600;letter-spacing:.06em;color:#fff;text-shadow:0 0 18px color-mix(in srgb,var(--c) 55%,transparent);">{{ card.codeFmt }}</div>
               <div style="display:flex;align-items:center;gap:9px;">
@@ -365,6 +370,10 @@ const STR = {
     emptyDrop: '把账号链接文件拖到这里', emptyHint1: '支持 .txt / .md / .yaml（每行一个链接）', emptyHint2: '或点此粘贴链接 / 扫 Google Authenticator 迁移码',
     boardNone: '还没有账号', accountFallback: (i) => '账号 ' + i,
     accountsCount: (n) => n + ' 个账号', copyCodeOf: (l) => '复制 ' + l + ' 的验证码',
+    cardOpenTitle: '打开单号页', cardLinkTitle: '复制该号链接', cardRemoveTitle: '移除',
+    cardRemoveConfirm: '再点一次确认移除',
+    removedMsg: (l) => '已移除「' + l + '」（重新导入即可恢复）',
+    cardLinkCopied: '已复制该账号链接 ✓——链接含密钥，请走可信渠道',
     imported: (n) => '已导入 ' + n + ' 个账号 ✓', importCap: (n) => '已达上限 ' + n + ' 个账号，多余的已忽略',
     alreadyInBoard: '这些账号已在看板中', noLinksFound: '未识别到账号链接', noLinksInFile: '文件中未识别到账号链接', noLinksDrop: '未在拖入内容中识别到账号链接',
     boardLinkBad: '看板链接无法解析（可能被截断或损坏）', cleared: '已清空（重新导入即可恢复）',
@@ -401,6 +410,10 @@ const STR = {
     emptyDrop: 'Drop your account-links file here', emptyHint1: 'Supports .txt / .md / .yaml (one link per line)', emptyHint2: 'or click to paste links / scan a Google Authenticator export',
     boardNone: 'No accounts yet', accountFallback: (i) => 'Account ' + i,
     accountsCount: (n) => n + (n === 1 ? ' account' : ' accounts'), copyCodeOf: (l) => 'Copy code for ' + l,
+    cardOpenTitle: 'Open single view', cardLinkTitle: 'Copy account link', cardRemoveTitle: 'Remove',
+    cardRemoveConfirm: 'Click again to confirm removal',
+    removedMsg: (l) => 'Removed “' + l + '” (re-import to restore)',
+    cardLinkCopied: 'Account link copied ✓ — it contains the secret, share with care',
     imported: (n) => 'Imported ' + n + (n === 1 ? ' account ✓' : ' accounts ✓'), importCap: (n) => 'Reached the ' + n + '-account limit, extras ignored',
     alreadyInBoard: 'These accounts are already on the board', noLinksFound: 'No account links found', noLinksInFile: 'No account links found in the file', noLinksDrop: 'No account links found in what you dropped',
     boardLinkBad: 'Board link could not be parsed (truncated or corrupted?)', cleared: 'Cleared (re-import to restore)',
@@ -440,7 +453,7 @@ class Component extends DCLogic {
     // —— 多号看板 ——
     accounts: [], boardLive: [], copiedIdx: null,
     importOpen: false, exportOpen: false, boardMsg: '', dragging: false,
-    pasteValue: '', linksCopied: false, boardUrlCopied: false, clearArmed: false,
+    pasteValue: '', linksCopied: false, boardUrlCopied: false, clearArmed: false, removeArmedIdx: null,
     // —— 演示模式 ——
     present: false, nolabel: false,
     presentPanel: false, presentNolabel: false, presentUrlCopied: false,
@@ -501,6 +514,7 @@ class Component extends DCLogic {
     clearTimeout(this._copiedT);
     clearTimeout(this._clearT);
     clearTimeout(this._msgT);
+    clearTimeout(this._removeT);
     window.removeEventListener('hashchange', this._onHash);
     window.removeEventListener('dragover', this._onDragOver);
     window.removeEventListener('dragleave', this._onDragLeave);
@@ -904,7 +918,36 @@ class Component extends DCLogic {
   clearBoard() {
     try { localStorage.removeItem('easy2fa.board'); } catch (e) {}
     this._boardCounters = [];
-    this.setState({ accounts: [], boardLive: [], importOpen: false, exportOpen: false, boardMsg: this.t().cleared });
+    this.setState({ accounts: [], boardLive: [], importOpen: false, exportOpen: false, boardMsg: this.t().cleared, removeArmedIdx: null });
+  }
+
+  // —— 单卡操作：打开单号 / 复制链接 / 移除 ——
+  openAccount(i) {
+    const a = (this.state.accounts || [])[i];
+    if (a) location.href = this.buildAccountUrl(a); // 换 hash → hashchange → 单号视图；浏览器返回键可回看板
+  }
+  copyAccountLink(i) {
+    const a = (this.state.accounts || [])[i];
+    if (!a) return;
+    this.copyText(this.buildAccountUrl(a), 'cardLinkCopied');
+    this.setState({ boardMsg: this.t().cardLinkCopied });
+  }
+  // 移除同「清空」一样走两步确认：第一次点武装该卡 2.2s，期间再点才真删
+  armOrRemove(i) {
+    if (this.state.removeArmedIdx === i) { clearTimeout(this._removeT); this.removeAccount(i); return; }
+    this.setState({ removeArmedIdx: i });
+    clearTimeout(this._removeT);
+    this._removeT = setTimeout(() => this.setState({ removeArmedIdx: null }), 2200);
+  }
+  removeAccount(i) {
+    const accts = (this.state.accounts || []).slice();
+    const rm = accts.splice(i, 1)[0];
+    if (!rm) { this.setState({ removeArmedIdx: null }); return; }
+    this.saveBoard(accts);
+    this._boardCounters = []; // 索引整体前移，计数器缓存作废
+    const live = (this.state.boardLive || []).slice(); live.splice(i, 1);
+    const labelTxt = rm.label || rm.issuer || this.t().accountFallback(i + 1);
+    this.setState({ accounts: accts, boardLive: live, removeArmedIdx: null, copiedIdx: null, boardMsg: this.t().removedMsg(labelTxt) }, () => this.refreshBoardAll());
   }
 
   addAccounts(list) {
@@ -1328,6 +1371,7 @@ class Component extends DCLogic {
       const lv = liveArr[i] || {};
       const labelTxt = a.label || a.issuer || t.accountFallback(i + 1);
       const frac = (lv.frac != null) ? lv.frac : 1;
+      const removeArmed = s.removeArmedIdx === i;
       return {
         color: a.color || '#22d3ee',
         initial: ((labelTxt.trim()[0]) || '#').toUpperCase(),
@@ -1337,8 +1381,16 @@ class Component extends DCLogic {
         barWidth: (frac * 100).toFixed(1) + '%',
         foot: (s.copiedIdx === i) ? t.copied : ((lv.sec != null ? lv.sec : '–') + 's'),
         onCopy: () => this.copyBoardCode(lv.code, i),
-        onKey: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.copyBoardCode(lv.code, i); } },
+        // 卡内小按钮的键盘事件会冒泡到整卡——只响应卡自身的 Enter/Space
+        onKey: (e) => { if (e.target !== e.currentTarget) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.copyBoardCode(lv.code, i); } },
         copyAria: t.copyCodeOf(labelTxt),
+        // —— 单卡操作（stopPropagation 防止触发整卡「点击复制」）——
+        onOpen: (e) => { e.stopPropagation(); this.openAccount(i); },
+        onCopyLink: (e) => { e.stopPropagation(); this.copyAccountLink(i); },
+        onRemove: (e) => { e.stopPropagation(); this.armOrRemove(i); },
+        removeTitle: removeArmed ? t.cardRemoveConfirm : t.cardRemoveTitle,
+        removeColor: removeArmed ? '#fb7185' : 'rgba(234,242,245,.45)',
+        removeBg: removeArmed ? 'rgba(251,113,133,.16)' : 'transparent',
       };
     });
 
